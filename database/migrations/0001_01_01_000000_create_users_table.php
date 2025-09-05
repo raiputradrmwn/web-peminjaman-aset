@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('password');
             $table->enum('roles', ['superadmin', 'admin', 'employee'])->default('employee');
             $table->string('division')->nullable();
+            $table->enum('role', ['superadmin', 'admin', 'employee'])->default('employee');
             $table->enum('status', ['active', 'inactive', 'pending'])->default('pending');
             $table->rememberToken();
             $table->timestamps();

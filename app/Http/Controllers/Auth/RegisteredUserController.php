@@ -28,24 +28,44 @@ class RegisteredUserController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    // public function store(Request $request): RedirectResponse
+    // {
+    //     $request->validate([
+    //         'name' => 'required|string|max:255',
+    //         'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
+    //         'password' => ['required', 'confirmed', Rules\Password::defaults()],
+    //     ]);
+
+    //     $user = User::create([
+    //         'name' => $request->name,
+    //         'email' => $request->email,
+    //         'password' => Hash::make($request->password),
+    //     ]);
+
+    //     event(new Registered($user));
+
+    //     Auth::login($user);
+
+    //     return redirect()->intended(route('dashboard', absolute: false));
+    // }
+    public function store(Request $request)
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|confirmed|min:8',
+            'roles' => 'required|in:superadmin,admin,employee', // tambahan
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'roles' => $request->roles,
         ]);
-
-        event(new Registered($user));
 
         Auth::login($user);
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        return redirect()->intended('/dashboard');
     }
 }
