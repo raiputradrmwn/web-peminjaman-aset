@@ -46,5 +46,10 @@ Route::middleware(['auth', 'role:employee'])->group(function () {
         ->name('employee.dashboard');
 });
 
+// Logout
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->middleware('auth')
+    ->name('logout');
+
 require __DIR__.'/settings.php';
 require __DIR__.'/auth.php';

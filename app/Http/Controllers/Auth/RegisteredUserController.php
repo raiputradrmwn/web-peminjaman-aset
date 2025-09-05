@@ -54,7 +54,7 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|confirmed|min:8',
-            'roles' => 'required|in:superadmin,admin,employee', // tambahan
+            'roles' => 'required|in:superadmin,admin,employee',
         ]);
 
         $user = User::create([

@@ -103,50 +103,55 @@ export default function Login() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md bg-white rounded-lg shadow p-6">
-        <h1 className="text-xl font-bold mb-4">Login</h1>
-        <form onSubmit={submit}>
-          <div className="mb-4">
-            <label className="block">Email</label>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md">
+        <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
+
+        <form onSubmit={submit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
             <input
               type="email"
               value={data.email}
               onChange={(e) => setData("email", e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
             {errors.email && (
-              <p className="text-red-500 text-sm">{errors.email}</p>
+              <div className="text-red-600 text-sm">{errors.email}</div>
             )}
           </div>
 
-          <div className="mb-4">
-            <label className="block">Password</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Password
+            </label>
             <input
               type="password"
               value={data.password}
               onChange={(e) => setData("password", e.target.value)}
-              className="w-full border rounded px-3 py-2"
+              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
             {errors.password && (
-              <p className="text-red-500 text-sm">{errors.password}</p>
+              <div className="text-red-600 text-sm">{errors.password}</div>
             )}
           </div>
 
-          <div className="mb-4 flex items-center">
+          <div className="flex items-center">
             <input
               type="checkbox"
               checked={data.remember}
               onChange={(e) => setData("remember", e.target.checked)}
-              className="mr-2"
+              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
             />
-            <span>Remember me</span>
+            <span className="ml-2 text-sm text-gray-600">Remember me</span>
           </div>
 
           <button
             type="submit"
             disabled={processing}
-            className="w-full bg-blue-500 text-white px-3 py-2 rounded"
+            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition"
           >
             {processing ? "Logging in..." : "Login"}
           </button>
