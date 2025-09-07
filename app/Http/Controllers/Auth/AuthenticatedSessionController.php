@@ -35,23 +35,24 @@ class AuthenticatedSessionController extends Controller
 
     //     return redirect()->intended(route('dashboard', absolute: false));
     // }
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'email'    => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            $role = Auth::user()->roles;
+            // Ambil role user (pastikan kolom di tabel User sesuai: role)
+            $role = Auth::user()->role;
 
             return match ($role) {
-                'superadmin' => redirect()->intended('/superadmin/dashboard'),
-                'admin'      => redirect()->intended('/admin/dashboard'),
-                'employee'   => redirect()->intended('/employee/dashboard'),
-                default      => redirect()->intended('/'),
+                'superadmin' => redirect()->route('superadmin.dashboard'),
+                'admin'      => redirect()->route('admin.dashboard'),
+                'employee'   => redirect()->route('employee.dashboard'),
+                default      => redirect()->route('dashboard'),
             };
         }
 

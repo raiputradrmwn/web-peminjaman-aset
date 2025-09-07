@@ -2,25 +2,18 @@
 
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 
+// Home
 Route::get('/', function () {
     return Inertia::render('welcome');
 })->name('home');
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
-    })->name('dashboard');
-});
-
-// Default dashboard route (bisa diarahkan ke role masing-masing)
+// Redirect ke dashboard sesuai role
 Route::get('/dashboard', function () {
     $user = auth()->user();
-    if (!$user) {
-        return redirect()->route('login');
-    }
 
-    return match ($user->roles) {
+    return match ($user?->role) {
         'superadmin' => redirect()->route('superadmin.dashboard'),
         'admin'      => redirect()->route('admin.dashboard'),
         'employee'   => redirect()->route('employee.dashboard'),
@@ -51,5 +44,5 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';
