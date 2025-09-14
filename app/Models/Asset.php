@@ -14,6 +14,7 @@ class Asset extends Model
         'serial_number',
         'name',
         'type',
+        'status',
     ];
 
     public function borrows()
