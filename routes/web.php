@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AssetController;
 use App\Http\Controllers\ApprovalController;
+use App\Http\Controllers\BorrowController;
 
 // ===================
 // Home
@@ -55,16 +56,27 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(func
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
     Route::get('/dashboard', fn () => Inertia::render('admin/dashboard'))
         ->name('admin.dashboard');
+
+    Route::post('/borrows/{borrow}/approve', [BorrowController::class, 'approve'])->name('admin.borrows.approve');
+    Route::post('/borrows/{borrow}/reject', [BorrowController::class, 'reject'])->name('admin.borrows.reject');
+    Route::post('/borrows/{borrow}/return', [BorrowController::class, 'returnBorrow'])->name('admin.borrows.return');
 });
 
 // ===================
 // Employee Routes
 // ===================
-Route::middleware(['auth', 'role:employee'])->prefix('employee')->group(function () {
-    Route::get('/dashboard', fn () => Inertia::render('employee/dashboard'))
-        ->name('employee.dashboard');
-});
+Route::middleware(['auth', 'role:employee'])->prefix('employee')->name('employee.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'employee'])
+        ->name('dashboard');
 
+    // Borrow Routes
+    Route::get('/borrows/available', [BorrowController::class, 'availableAssets'])
+        ->name('borrows.available');
+    Route::get('/borrows/my', [BorrowController::class, 'myBorrows'])
+        ->name('borrows.my');
+    Route::post('/borrows', [BorrowController::class, 'store'])
+        ->name('borrows.store');
+});
 // ===================
 // Logout
 // ===================
