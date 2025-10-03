@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('serial_number')->unique();
             $table->string('name');
             $table->string('type');
+            $table->integer('stock')->default(1);
+            $table->enum('status', ['available', 'borrowed', 'maintenance', 'retired'])->default('available');
             $table->timestamps();
             $table->softDeletes();
         });
