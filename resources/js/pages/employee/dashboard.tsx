@@ -36,7 +36,7 @@ export default function Dashboard({
   myBorrows,
 }: EmployeeDashboardProps) {
   const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
-  const [availableAssetsState, setAvailableAssetsState] = React.useState(availableAssets);
+  const [availableAssetsState] = React.useState(availableAssets);
   const [myBorrowsState, setMyBorrowsState] = React.useState(myBorrows);
 
   // Add states for total borrow counts
@@ -48,31 +48,39 @@ export default function Dashboard({
     router.post("/logout");
   };
 
+  // Hitung stok yang benar dengan mengurangi borrow pending/approved
+  const getAvailableStock = (assetId: number) => {
+    const borrowedQty = myBorrowsState
+      .filter(
+        (b) =>
+          b.asset?.id === assetId &&
+          (b.status === "pending" || b.status === "approved")
+      )
+      .reduce((sum, b) => sum + b.quantity, 0);
+
+    const asset = availableAssetsState.find((a) => a.id === assetId);
+    return asset ? asset.stock - borrowedQty : 0;
+  };
+
   const handleBorrow = (assetId: number) => {
     const quantity = quantities[assetId] || 1;
+    const availableStock = getAvailableStock(assetId);
 
-    // Optimistic UI Update: Immediately reduce the stock and add the borrow to history
-    setAvailableAssetsState((prevAssets) =>
-      prevAssets.map((asset) =>
-        asset.id === assetId
-          ? { ...asset, stock: asset.stock - quantity }
-          : asset
-      )
-    );
+    if (quantity > availableStock) {
+      alert("Stok tidak mencukupi untuk melakukan peminjaman.");
+      return;
+    }
 
     const newBorrow: Borrow = {
-      id: Date.now(), // Using current timestamp as a unique ID for the optimistic borrow
+      id: Date.now(), // sementara untuk optimistic UI
       status: "pending",
       quantity,
       asset: availableAssetsState.find((asset) => asset.id === assetId) ?? null,
     };
 
     setMyBorrowsState((prevBorrows) => [...prevBorrows, newBorrow]);
+    setPendingBorrows((prev) => prev + 1);
 
-    // Optimistic update for borrow stats
-    setPendingBorrows(prev => prev + 1);
-
-    // Simulate the borrow action (post request)
     router.post(
       "/employee/borrows",
       {
@@ -81,29 +89,20 @@ export default function Dashboard({
       },
       {
         onSuccess: () => {
-          // Update the borrow status to approved upon success
           setMyBorrowsState((prevBorrows) =>
             prevBorrows.map((borrow) =>
               borrow.id === newBorrow.id ? { ...borrow, status: "approved" } : borrow
             )
           );
-          setApprovedBorrows(prev => prev + 1);
-          setPendingBorrows(prev => prev - 1);
+          setApprovedBorrows((prev) => prev + 1);
+          setPendingBorrows((prev) => prev - 1);
         },
         onError: () => {
-          // If there is an error, revert the optimistic update
-          setAvailableAssetsState((prevAssets) =>
-            prevAssets.map((asset) =>
-              asset.id === assetId
-                ? { ...asset, stock: asset.stock + quantity }
-                : asset
-            )
-          );
-          // Optionally remove the optimistic borrow if it failed
+          // rollback kalau gagal
           setMyBorrowsState((prevBorrows) =>
             prevBorrows.filter((borrow) => borrow.id !== newBorrow.id)
           );
-          setPendingBorrows(prev => prev - 1);
+          setPendingBorrows((prev) => prev - 1);
         },
       }
     );
@@ -165,36 +164,43 @@ export default function Dashboard({
             <p className="text-gray-500">No available assets.</p>
           ) : (
             <ul className="space-y-2">
-              {availableAssetsState.map((asset) => (
-                <li
-                  key={asset.id}
-                  className="p-3 border shadow rounded flex justify-between items-center"
-                >
-                  <div>
-                    <p className="font-bold">{asset.name}</p>
-                    <p className="text-sm text-gray-500">{asset.type}</p>
-                    <p className="text-sm text-green-600">Stock: {asset.stock}</p>
-                  </div>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      type="number"
-                      min={1}
-                      max={asset.stock}
-                      value={quantities[asset.id] || 1}
-                      onChange={(e) =>
-                        handleQuantityChange(asset.id, parseInt(e.target.value))
-                      }
-                      className="w-16 border rounded p-1 text-center"
-                    />
-                    <Button
-                      onClick={() => handleBorrow(asset.id)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-                    >
-                      Borrow
-                    </Button>
-                  </div>
-                </li>
-              ))}
+              {availableAssetsState.map((asset) => {
+                const availableStock = getAvailableStock(asset.id);
+                return (
+                  <li
+                    key={asset.id}
+                    className="p-3 border shadow rounded flex justify-between items-center"
+                  >
+                    <div>
+                      <p className="font-bold">{asset.name}</p>
+                      <p className="text-sm text-gray-500">{asset.type}</p>
+                      <p className="text-sm text-green-600">
+                        Stock: {availableStock}
+                      </p>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        type="number"
+                        min={1}
+                        max={availableStock}
+                        value={quantities[asset.id] || 1}
+                        onChange={(e) =>
+                          handleQuantityChange(asset.id, parseInt(e.target.value))
+                        }
+                        className="w-16 border rounded p-1 text-center"
+                        disabled={availableStock <= 0}
+                      />
+                      <Button
+                        onClick={() => handleBorrow(asset.id)}
+                        className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        disabled={availableStock <= 0}
+                      >
+                        Borrow
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

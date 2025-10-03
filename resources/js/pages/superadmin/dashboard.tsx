@@ -28,6 +28,8 @@ interface Borrow {
     quantity: number;
     user: User;
     asset: Asset;
+    approval_date?: string;
+    created_at: string;
 }
 
 interface DashboardProps {
@@ -310,8 +312,52 @@ export default function SuperadminDashboard({
                                         <p className="font-semibold">{borrow.asset.name}</p>
                                         <p className="text-sm text-gray-500">Peminjam: {borrow.user.name}</p>
                                         <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
-                                        <p className="text-sm text-gray-400">Status: {borrow.status}</p>
+                                        <p className="text-sm">
+                                            Status:{' '}
+                                            <span
+                                                className={`font-bold px-2 py-1 rounded text-white ${
+                                                borrow.status === 'approved'
+                                                    ? 'bg-green-600'
+                                                    : borrow.status === 'pending'
+                                                    ? 'bg-yellow-600'
+                                                    : 'bg-red-600'
+                                                }`}
+                                            >
+                                                {borrow.status}
+                                            </span>
+                                        </p>
+                                        {/* Tanggal Pinjam */}
+                                        <p className="text-sm text-gray-400">
+                                            Tanggal Pinjam:{' '}
+                                            {new Date(borrow.created_at).toLocaleString('id-ID', {
+                                                day: '2-digit',
+                                                month: 'long',
+                                                year: 'numeric',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                                second: '2-digit',
+                                                hour12: false,
+                                            })}
+                                        </p>
+
+                                        {/* Approval At (hanya tampil kalau ada) */}
+                                        {borrow.approval_date && (
+                                            <p className="text-sm text-gray-400">
+                                                Approval At:{' '}
+                                                {new Date(borrow.approval_date).toLocaleString('id-ID', {
+                                                    day: '2-digit',
+                                                    month: 'long',
+                                                    year: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    second: '2-digit',
+                                                    hour12: false,
+                                                })}
+                                            </p>
+                                        )}
                                     </div>
+
+                                    {/* Action Button */}
                                     <div className="space-x-2">
                                         {borrow.status === 'pending' && (
                                             <>
