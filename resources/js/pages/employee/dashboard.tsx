@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import * as React from "react";
 import { router } from "@inertiajs/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 interface Asset {
   id: number;
@@ -13,7 +18,7 @@ interface Borrow {
   id: number;
   status: "pending" | "approved" | "rejected" | "returned";
   quantity: number;
-  asset?: Asset | null; // bisa null kalau asset sudah dihapus
+  asset?: Asset | null;
   notes?: string;
 }
 
@@ -32,7 +37,7 @@ export default function Dashboard({
   availableAssets,
   myBorrows,
 }: EmployeeDashboardProps) {
-  const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
+  const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
 
   const handleLogout = () => {
     router.post("/logout");
@@ -58,39 +63,47 @@ export default function Dashboard({
       {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Employee Dashboard</h1>
-        <button
+        <Button
+          variant="destructive"
           onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
         >
           Logout
-        </button>
+        </Button>
       </div>
 
-      {/* Statistik */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-4 bg-white dark:bg-neutral-800 shadow rounded">
-          <h2 className="text-lg font-semibold">Approved Borrows</h2>
-          <p className="text-3xl font-bold text-green-600">
-            {totalApprovedBorrows}
-          </p>
-        </div>
-        <div className="p-4 bg-white dark:bg-neutral-800 shadow rounded">
-          <h2 className="text-lg font-semibold">Pending Borrows</h2>
-          <p className="text-3xl font-bold text-yellow-600">
-            {totalPendingBorrows}
-          </p>
-        </div>
-        <div className="p-4 bg-white dark:bg-neutral-800 shadow rounded">
-          <h2 className="text-lg font-semibold">Rejected Borrows</h2>
-          <p className="text-3xl font-bold text-red-600">
-            {totalRejectedBorrows}
-          </p>
-        </div>
+      {/* Statistik Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Approved Borrows</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{totalApprovedBorrows}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Borrows</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-yellow-600">{totalPendingBorrows}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Rejected Borrows</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-red-600">{totalRejectedBorrows}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Available Assets & My Borrows */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-        {/* Daftar Available Assets */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* Available Assets */}
         <div>
           <h2 className="text-xl font-bold mb-3">Available Assets</h2>
           {availableAssets.length === 0 ? (
@@ -105,12 +118,10 @@ export default function Dashboard({
                   <div>
                     <p className="font-bold">{asset.name}</p>
                     <p className="text-sm text-gray-500">{asset.type}</p>
-                    <p className="text-sm text-green-600">
-                      Stock: {asset.stock}
-                    </p>
+                    <p className="text-sm text-green-600">Stock: {asset.stock}</p>
                   </div>
                   <div className="flex gap-2 items-center">
-                    <input
+                    <Input
                       type="number"
                       min={1}
                       max={asset.stock}
@@ -120,12 +131,12 @@ export default function Dashboard({
                       }
                       className="w-16 border rounded p-1 text-center"
                     />
-                    <button
+                    <Button
                       onClick={() => handleBorrow(asset.id)}
                       className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
                     >
                       Borrow
-                    </button>
+                    </Button>
                   </div>
                 </li>
               ))}
@@ -133,13 +144,11 @@ export default function Dashboard({
           )}
         </div>
 
-        {/* Daftar Borrow Saya */}
+        {/* My Borrow History */}
         <div>
           <h2 className="text-xl font-bold mb-3">My Borrow History</h2>
           {myBorrows.length === 0 ? (
-            <p className="text-gray-500">
-              You have not borrowed any assets yet.
-            </p>
+            <p className="text-gray-500">You have not borrowed any assets yet.</p>
           ) : (
             <ul className="space-y-2">
               {myBorrows.map((borrow) => (
@@ -148,15 +157,9 @@ export default function Dashboard({
                   className="p-3 border shadow rounded flex justify-between items-center"
                 >
                   <div>
-                    <p className="font-bold">
-                      {borrow.asset?.name ?? "Asset deleted"}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {borrow.asset?.type ?? "-"}
-                    </p>
-                    <p className="text-sm text-blue-600">
-                      Quantity: {borrow.quantity}
-                    </p>
+                    <p className="font-bold">{borrow.asset?.name ?? "Asset deleted"}</p>
+                    <p className="text-sm text-gray-500">{borrow.asset?.type ?? "-"}</p>
+                    <p className="text-sm text-blue-600">Quantity: {borrow.quantity}</p>
                   </div>
                   <span
                     className={`px-2 py-1 rounded text-white ${
