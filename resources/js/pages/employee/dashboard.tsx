@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { router } from "@inertiajs/react";
 
 interface Asset {
@@ -6,12 +6,15 @@ interface Asset {
   name: string;
   type: string;
   status: string;
+  stock: number;
 }
 
 interface Borrow {
   id: number;
-  status: string;
-  asset: Asset;
+  status: "pending" | "approved" | "rejected" | "returned";
+  quantity: number;
+  asset?: Asset | null; // bisa null kalau asset sudah dihapus
+  notes?: string;
 }
 
 interface EmployeeDashboardProps {
@@ -29,12 +32,25 @@ export default function Dashboard({
   availableAssets,
   myBorrows,
 }: EmployeeDashboardProps) {
+  const [quantities, setQuantities] = useState<{ [key: number]: number }>({});
+
   const handleLogout = () => {
     router.post("/logout");
   };
 
   const handleBorrow = (assetId: number) => {
-    router.post("/employee/borrows", { asset_id: assetId } as any);
+    const quantity = quantities[assetId] || 1;
+    router.post("/employee/borrows", {
+      asset_id: assetId,
+      quantity,
+    });
+  };
+
+  const handleQuantityChange = (assetId: number, value: number) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [assetId]: value,
+    }));
   };
 
   return (
@@ -89,11 +105,21 @@ export default function Dashboard({
                   <div>
                     <p className="font-bold">{asset.name}</p>
                     <p className="text-sm text-gray-500">{asset.type}</p>
+                    <p className="text-sm text-green-600">
+                      Stock: {asset.stock}
+                    </p>
                   </div>
                   <div className="flex gap-2 items-center">
-                    <span className="px-2 py-1 rounded text-white bg-green-500">
-                      {asset.status}
-                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={asset.stock}
+                      value={quantities[asset.id] || 1}
+                      onChange={(e) =>
+                        handleQuantityChange(asset.id, parseInt(e.target.value))
+                      }
+                      className="w-16 border rounded p-1 text-center"
+                    />
                     <button
                       onClick={() => handleBorrow(asset.id)}
                       className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -119,12 +145,17 @@ export default function Dashboard({
               {myBorrows.map((borrow) => (
                 <li
                   key={borrow.id}
-                  className="p-3 bg-white shadow rounded flex justify-between"
+                  className="p-3 border shadow rounded flex justify-between items-center"
                 >
                   <div>
-                    <p className="font-bold">{borrow.asset?.name}</p>
+                    <p className="font-bold">
+                      {borrow.asset?.name ?? "Asset deleted"}
+                    </p>
                     <p className="text-sm text-gray-500">
-                      {borrow.asset?.type}
+                      {borrow.asset?.type ?? "-"}
+                    </p>
+                    <p className="text-sm text-blue-600">
+                      Quantity: {borrow.quantity}
                     </p>
                   </div>
                   <span

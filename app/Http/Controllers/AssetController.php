@@ -9,7 +9,7 @@ class AssetController extends Controller
 {
     public function index()
     {
-        $assets = Asset::select('id', 'name', 'type', 'status')->get();
+        $assets = Asset::select('id', 'serial_number', 'name', 'type', 'status', 'stock')->get();
 
         return inertia('superadmin/assets/index', [
             'assets' => $assets
@@ -22,37 +22,31 @@ class AssetController extends Controller
             'name'   => 'required|string|max:255',
             'type'   => 'required|string|in:asset,room,vehicle,equipment',
             'status' => 'required|in:available,borrowed,maintenance,retired',
+            'stock'  => 'required|integer|min:1',
         ]);
 
-        // Generate serial number
-        $prefix = '';
+        $prefix = match ($request->type) {
+            'asset'   => strtok($request->name, ' '),
+            'room'    => str_replace(' ', '-', $request->name),
+            default   => ucfirst($request->type),
+        };
 
-        if ($request->type === 'asset') {
-            // ambil kata pertama dari nama
-            $prefix = strtok($request->name, ' ');
-        } elseif ($request->type === 'room') {
-            // ambil nama room full tanpa spasi terakhir
-            $prefix = str_replace(' ', '-', $request->name);
-        } else {
-            // default → pakai type
-            $prefix = ucfirst($request->type);
-        }
-
-        // Hitung jumlah serial number yang sudah ada dengan prefix tsb
         $count = Asset::where('serial_number', 'LIKE', $prefix . '-%')->count();
         $serialNumber = $prefix . '-' . str_pad($count + 1, 3, '0', STR_PAD_LEFT);
 
-        // Simpan ke database
         Asset::create([
             'serial_number' => $serialNumber,
             'name'          => $request->name,
             'type'          => $request->type,
             'status'        => $request->status,
+            'stock'         => (int) $request->stock, // pastikan integer
         ]);
 
-        return redirect()->back()->with('success', 'Aset berhasil ditambahkan dengan Serial Number: ' . $serialNumber);
+        return redirect()->back()->with(
+            'success',
+            'Aset berhasil ditambahkan dengan Serial Number: ' . $serialNumber
+        );
     }
-
 
     public function update(Request $request, Asset $asset)
     {
@@ -60,9 +54,15 @@ class AssetController extends Controller
             'name'   => 'required|string|max:255',
             'type'   => 'required|string',
             'status' => 'required|in:available,borrowed,maintenance,retired',
+            'stock'  => 'required|integer|min:0',
         ]);
 
-        $asset->update($request->all());
+        $asset->update([
+            'name'   => $request->name,
+            'type'   => $request->type,
+            'status' => $request->status,
+            'stock'  => (int) $request->stock,
+        ]);
 
         return redirect()->back()->with('success', 'Aset berhasil diperbarui.');
     }
