@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('borrow_id')->constrained('borrows')->onDelete('cascade');
             $table->foreignId('changed_by')->constrained('users')->onDelete('cascade');
-            $table->enum('old_status', ['pending', 'approved', 'rejected', 'returned']);
+            $table->enum('old_status', ['pending', 'approved', 'rejected', 'returned'])->nullable();
             $table->enum('new_status', ['pending', 'approved', 'rejected', 'returned']);
             $table->text('notes')->nullable();
             $table->timestamp('changed_at')->nullable();

@@ -13,7 +13,7 @@ use App\Http\Controllers\BorrowController;
 // Home
 // ===================
 Route::get('/', function () {
-    return Inertia::render('welcome');
+    return redirect()->route('login');
 })->name('home');
 
 // ===================
@@ -33,10 +33,9 @@ Route::get('/dashboard', function () {
 // ===================
 // Superadmin Routes
 // ===================
-Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(function () {
+Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'superadmin'])
-        ->name('superadmin.dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'superadmin'])->name('dashboard');
 
     // User Management
     Route::resource('users', UserController::class)->except(['create', 'edit']);
@@ -46,20 +45,34 @@ Route::middleware(['auth', 'role:superadmin'])->prefix('superadmin')->group(func
 
     // Approvals
     Route::get('approvals', [ApprovalController::class, 'index'])->name('approvals.index');
-    Route::post('approvals/{user}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
-    Route::post('approvals/{user}/deny', [ApprovalController::class, 'deny'])->name('approvals.deny');
+    Route::post('users/{user}/approve', [ApprovalController::class, 'approve'])->name('users.approve');
+    Route::post('users/{user}/deny', [ApprovalController::class, 'deny'])->name('users.deny');
+
+    // Borrow Management (tambahan)
+    Route::post('/borrows/{borrow}/approve', [BorrowController::class, 'approve'])->name('borrows.approve');
+    Route::post('/borrows/{borrow}/reject', [BorrowController::class, 'reject'])->name('borrows.reject');
+    Route::post('/borrows/{borrow}/return', [BorrowController::class, 'returnBorrow'])->name('borrows.return');
 });
 
 // ===================
 // Admin Routes
 // ===================
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', fn () => Inertia::render('admin/dashboard'))
+    // Dashboard Admin (pakai controller, bukan langsung inertia)
+    Route::get('/dashboard', [DashboardController::class, 'admin'])
         ->name('admin.dashboard');
 
-    Route::post('/borrows/{borrow}/approve', [BorrowController::class, 'approve'])->name('admin.borrows.approve');
-    Route::post('/borrows/{borrow}/reject', [BorrowController::class, 'reject'])->name('admin.borrows.reject');
-    Route::post('/borrows/{borrow}/return', [BorrowController::class, 'returnBorrow'])->name('admin.borrows.return');
+    // Borrow Management
+    Route::post('/borrows/{borrow}/approve', [BorrowController::class, 'approve'])
+        ->name('admin.borrows.approve');
+    Route::post('/borrows/{borrow}/reject', [BorrowController::class, 'reject'])
+        ->name('admin.borrows.reject');
+    Route::post('/borrows/{borrow}/return', [BorrowController::class, 'returnBorrow'])
+        ->name('admin.borrows.return');
+
+    // User Management (hanya create oleh admin untuk divisi sendiri)
+    Route::post('/users', [UserController::class, 'storeIsAdmin'])
+        ->name('admin.users.storeIsAdmin');
 });
 
 // ===================

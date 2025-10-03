@@ -11,7 +11,7 @@ class UserController extends Controller
     // daftar semua user
     public function index()
     {
-        $users = User::select('id', 'name', 'email', 'role', 'status')->get();
+        $users = User::select('id', 'name', 'email', 'division', 'role', 'status')->get();
 
         return inertia('superadmin/users/index', [
             'users' => $users
@@ -22,16 +22,18 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
-            'role'  => 'required|in:admin,employee',
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users',
+            'role'     => 'required|in:admin,employee',
+            'division' => 'nullable|string|max:255',
         ]);
 
         User::create([
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make('default123!'), // default password
-            'role'    => $request->role,
+            'role'     => $request->role,
+            'division' => $request->division,
             'status'   => 'active',
         ]);
 
@@ -59,5 +61,27 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->back()->with('success', 'User berhasil dihapus.');
+    }
+
+    public function storeIsAdmin(Request $request)
+    {
+        $request->validate([
+            'name'  => 'required|string|max:255',
+            'email' => 'required|email|unique:users',
+            'role'  => 'required|in:employee', // admin hanya boleh tambah employee
+        ]);
+
+        $admin = auth()->user();
+
+        User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make('default123!'),
+            'role'     => $request->role,
+            'division' => $admin->division, // ikut division admin
+            'status'   => 'active',
+        ]);
+
+        return redirect()->back()->with('success', 'User berhasil ditambahkan.');
     }
 }

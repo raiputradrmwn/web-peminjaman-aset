@@ -103,8 +103,8 @@ export default function Login() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md">
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="w-full max-w-md  p-8 rounded-xl shadow-md border">
         <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
 
         <form onSubmit={submit} className="space-y-4">
@@ -116,7 +116,7 @@ export default function Login() {
               type="email"
               value={data.email}
               onChange={(e) => setData("email", e.target.value)}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full rounded-lg border shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
             {errors.email && (
               <div className="text-red-600 text-sm">{errors.email}</div>
@@ -131,7 +131,7 @@ export default function Login() {
               type="password"
               value={data.password}
               onChange={(e) => setData("password", e.target.value)}
-              className="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 block w-full rounded-lg border shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
             {errors.password && (
               <div className="text-red-600 text-sm">{errors.password}</div>

@@ -15,6 +15,7 @@ class Asset extends Model
         'name',
         'type',
         'status',
+        'stock',
     ];
 
     public function borrows()

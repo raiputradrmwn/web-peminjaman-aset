@@ -11,71 +11,95 @@ use App\Models\Borrow;
 
 class DashboardController extends Controller
 {
+    /**
+     * Dashboard untuk Superadmin
+     */
     public function superadmin()
     {
-        $totalAssets = Asset::count();
-        $totalAdmins = User::where('role', 'admin')->count();
-        $totalEmployees = User::where('role', 'employee')->count();
-        $assets = Asset::all();
-        $pendingAdmins = User::whereIn('role', ['admin', 'employee'])
-                            ->where('status', 'pending')
-                            ->get();
-
         return Inertia::render('superadmin/dashboard', [
-            'totalAssets'    => $totalAssets,
-            'totalAdmins'    => $totalAdmins,
-            'totalEmployees' => $totalEmployees,
-            'assets'         => $assets,
-            'pendingAdmins'  => $pendingAdmins,
+            'users'  => User::select('id', 'name', 'email', 'role', 'status', 'division')->get(),
+            'assets' => Asset::select('id', 'serial_number', 'name', 'type', 'status', 'stock')->get(),
+            'activeEmployees'          => User::where('role', 'employee')->where('status', 'active')->count(),
+            'pendingEmployees'         => User::where('role', 'employee')->where('status', 'pending')->count(),
+            'availableAssetsCount'     => Asset::where('status', 'available')->count(),
+            'borrowedAssetsCount'      => Asset::where('status', 'borrowed')->count(),
+            'availableAssets'          => Asset::where('status', 'available')->get(),
+            'pendingApprovalEmployees' => User::where('status', 'pending')->get(),
+            'recentBorrows'            => Borrow::with(['user','asset'])->latest()->take(10)->get(),
         ]);
     }
 
-     public function employee()
+    /**
+     * Dashboard untuk Admin
+     */
+    public function admin()
+    {
+        $admin = auth()->user();
+
+        return Inertia::render('admin/dashboard', [
+            // Statistik karyawan di divisi admin
+            'activeEmployees'  => User::where('role', 'employee')
+                                      ->where('status', 'active')
+                                      ->where('division', $admin->division)
+                                      ->count(),
+
+            'pendingEmployees' => User::where('role', 'employee')
+                                      ->where('status', 'pending')
+                                      ->where('division', $admin->division)
+                                      ->count(),
+
+            // Statistik aset (opsional: kalau asset juga ada kolom division bisa difilter pakai ->where('division', $admin->division))
+            'availableAssetsCount' => Asset::where('status', 'available')->count(),
+            'borrowedAssetsCount'  => Borrow::where('status', 'approved')->sum('quantity'),
+
+            // List aset yang masih tersedia
+            'availableAssets' => Asset::where('status', 'available')
+                                      ->where('stock', '>', 0)
+                                      ->get(),
+
+            // Daftar employee pending approval (hanya divisi admin)
+            'pendingApprovalEmployees' => User::where('role', 'employee')
+                                              ->where('status', 'pending')
+                                              ->where('division', $admin->division)
+                                              ->get(),
+
+            // Peminjaman terbaru
+            'recentBorrows' => Borrow::with(['user', 'asset'])
+                                     ->latest()
+                                     ->take(10)
+                                     ->get(),
+
+            // Semua employee di divisi admin
+            'users'  => User::where('division', $admin->division)->get(),
+
+            // Semua assets (bisa difilter per divisi kalau ada kolom division di tabel assets)
+            'assets' => Asset::all(),
+        ]);
+    }
+
+    /**
+     * Dashboard untuk Employee
+     */
+    public function employee()
     {
         $user = auth()->user();
 
-        // Hitung peminjaman milik user yg sedang login
-        $totalApprovedBorrows = Borrow::where('user_id', $user->id)
-            ->where('status', 'approved')
-            ->count();
-
-        $totalPendingBorrows = Borrow::where('user_id', $user->id)
-            ->where('status', 'pending')
-            ->count();
-
-        $totalRejectedBorrows = Borrow::where('user_id', $user->id)
-            ->where('status', 'rejected')
-            ->count();
-
-        // Ambil semua asset yang available supaya bisa dipinjam
-        $availableAssets = Asset::where('status', 'available')->get();
-
-        // Ambil daftar borrow user agar bisa ditampilkan di dashboard
-        $myBorrows = Borrow::with('asset')
-            ->where('user_id', $user->id)
-            ->latest()
-            ->get();
-
         return Inertia::render('employee/dashboard', [
-            'totalApprovedBorrows' => $totalApprovedBorrows,
-            'totalPendingBorrows' => $totalPendingBorrows,
-            'totalRejectedBorrows' => $totalRejectedBorrows,
-            'availableAssets' => $availableAssets,
-            'myBorrows' => $myBorrows,
-        ]);
-    }
+            // statistik pinjaman user
+            'totalApprovedBorrows' => $user->borrows()->where('status', 'approved')->count(),
+            'totalPendingBorrows'  => $user->borrows()->where('status', 'pending')->count(),
+            'totalRejectedBorrows' => $user->borrows()->where('status', 'rejected')->count(),
 
-    public function admin()
-    {
-        return Inertia::render('admin/dashboard', [
-            'totalAssets' => Asset::count(),
-            'availableAssets' => Asset::where('status', 'available')->count(),
-            'borrowedAssets' => Asset::where('status', 'borrowed')->count(),
-            'pendingBorrows' => Borrow::where('status', 'pending')->count(),
-            'borrows' => Borrow::with(['user', 'asset'])
-                        ->latest()
-                        ->take(10)
-                        ->get(),
+            // aset yang masih tersedia
+            'availableAssets' => Asset::where('status', 'available')
+                ->where('stock', '>', 0)
+                ->get(),
+
+            // histori peminjaman milik user login
+            'myBorrows' => $user->borrows()
+                ->with('asset')
+                ->latest()
+                ->get(),
         ]);
     }
 }
