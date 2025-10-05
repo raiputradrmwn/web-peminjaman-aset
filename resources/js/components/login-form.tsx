@@ -1,10 +1,11 @@
-import React from "react";
+import React, { useState } from "react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useForm } from "@inertiajs/react";
+import { FaEye, FaEyeSlash } from "react-icons/fa"; // Importing eye icons from react-icons
+import { Button } from "./ui/button";
 
 interface LoginFormProps extends React.ComponentPropsWithoutRef<"div"> {
   className?: string;
@@ -16,6 +17,8 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
     password: "",
     remember: false,
   });
+
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,30 +50,28 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
               <div className="grid gap-2">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a href="#" className="ml-auto inline-block text-sm underline-offset-4 hover:underline">
-                    Forgot your password?
-                  </a>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={data.password}
-                  onChange={(e) => setData("password", e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={data.password}
+                    onChange={(e) => setData("password", e.target.value)}
+                    required
+                  />
+                  <span
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-xl text-gray-500"
+                  >
+                    {showPassword ? (
+                      <FaEye />
+                    ) : (
+                      <FaEyeSlash />
+                    )}
+                  </span>
+                </div>
                 {errors.password && <div className="text-red-600 text-sm">{errors.password}</div>}
               </div>
-
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={data.remember}
-                  onChange={(e) => setData("remember", e.target.checked)}
-                  className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-600">Remember me</span>
-              </div>
-
               <Button type="submit" className="w-full" disabled={processing}>
                 {processing ? "Logging in..." : "Login"}
               </Button>

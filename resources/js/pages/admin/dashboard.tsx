@@ -16,6 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 interface Asset {
   id: number;
   name: string;
@@ -53,7 +56,7 @@ interface DashboardProps {
   assets?: Asset[];
 }
 
-// Helper untuk format tanggal & waktu
+
 const formatDateTime = (dateString?: string) => {
   if (!dateString) return "-";
   return new Date(dateString).toLocaleString("id-ID", {
@@ -63,7 +66,7 @@ const formatDateTime = (dateString?: string) => {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: false, // 24 jam
+    hour12: false, 
   });
 };
 
@@ -79,12 +82,22 @@ export default function AdminDashboard({
 }: DashboardProps) {
   const { flash }: any = usePage().props;
 
-  // Logout
+  
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState(false);
+
   const handleLogout = () => {
     router.post("/logout");
   };
 
-  // Form to add user (admin can only add employee)
+  const openLogoutDialog = () => {
+    setIsLogoutDialogOpen(true);
+  };
+
+  const closeLogoutDialog = () => {
+    setIsLogoutDialogOpen(false);
+  };
+
+  
   const userForm = useForm({
     name: "",
     email: "",
@@ -97,7 +110,7 @@ export default function AdminDashboard({
     });
   };
 
-  // Form to add asset
+  
   const assetForm = useForm({
     name: "",
     type: "asset",
@@ -111,7 +124,7 @@ export default function AdminDashboard({
     });
   };
 
-  // Approval actions for borrow
+  
   const approveBorrow = (id: number) => {
     router.post(`/admin/borrows/${id}/approve`);
   };
@@ -126,12 +139,31 @@ export default function AdminDashboard({
 
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-        <Button variant="destructive" onClick={handleLogout}>
-          Logout
-        </Button>
+        <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="destructive" onClick={openLogoutDialog}>
+              Logout
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Logout Confirmation</DialogTitle>
+            </DialogHeader>
+            <DialogDescription>
+              Are you sure you want to log out?
+            </DialogDescription>
+            <div className="flex gap-4">
+              <Button onClick={closeLogoutDialog} variant="secondary">
+                Cancel
+              </Button>
+              <Button onClick={handleLogout} variant="destructive">
+                Yes, Logout
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {flash?.success && (
@@ -139,8 +171,6 @@ export default function AdminDashboard({
           {flash.success}
         </div>
       )}
-
-      {/* Statistik Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardHeader>
@@ -188,106 +218,95 @@ export default function AdminDashboard({
       </div>
 
       {/* Recent Borrows */}
-      {/* Recent Borrows */}
-        <section>
+      <section>
         <h2 className="text-xl font-semibold mt-6 mb-4">Recent Borrows</h2>
         {recentBorrows.length === 0 ? (
-            <p className="text-gray-500">Belum ada peminjaman.</p>
+          <p className="text-gray-500">Belum ada peminjaman.</p>
         ) : (
-            <ul className="space-y-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {recentBorrows.map((borrow) => (
-                <li
-                key={borrow.id}
-                className="p-4 border rounded shadow flex justify-between items-center"
-                >
-                <div>
-                    <p className="font-semibold">{borrow.asset?.name}</p>
-                    <p className="text-sm text-gray-500">
-                    Peminjam: {borrow.user.name}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                    Jumlah: {borrow.quantity}
-                    </p>
+              <Card key={borrow.id} className="space-y-4 p-4 shadow-lg">
+                <div className="space-y-1">
+                  <p className="font-semibold">{borrow.asset?.name}</p>
+                  <p className="text-sm text-gray-500">Peminjam: {borrow.user.name}</p>
+                  <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
 
-                    {/* Status dengan badge */}
-                    <p className="text-sm mt-1">
-                    Status:{' '}
+                  {/* Status with badge */}
+                  <p className="text-sm mt-1">
+                    Status:{" "}
                     <span
-                        className={`font-bold px-2 py-1 rounded text-white ${
-                        borrow.status === 'approved'
-                            ? 'bg-green-600'
-                            : borrow.status === 'pending'
-                            ? 'bg-yellow-600'
-                            : 'bg-red-600'
-                        }`}
+                      className={`font-bold px-2 py-1 rounded text-white ${
+                        borrow.status === "approved"
+                          ? "bg-green-500"
+                          : borrow.status === "pending"
+                          ? "bg-yellow-500"
+                          : "bg-blue-500"
+                      }`}
                     >
-                        {borrow.status}
+                      {borrow.status}
                     </span>
-                    </p>
+                  </p>
 
-                    {/* Tanggal pinjam */}
-                    <p className="text-sm text-gray-400">
-                    Tanggal Pinjam:{' '}
-                    {new Date(borrow.created_at).toLocaleString('id-ID', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false,
-                    }).replace(' pukul', ' pukul')}
-                    </p>
+                  {/* Borrow Date */}
+                  <p className="text-sm text-gray-400">
+                    Tanggal Pinjam:{" "}
+                    {new Date(borrow.created_at).toLocaleString("id-ID", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                      hour12: false,
+                    })}
+                  </p>
 
-                    {/* Approval date kalau ada */}
-                    {borrow.approval_date && (
+                  {/* Approval date if available */}
+                  {borrow.approval_date && (
                     <p className="text-sm text-gray-400">
-                        Approval At:{' '}
-                        {new Date(borrow.approval_date).toLocaleString('id-ID', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
+                      Approval At:{" "}
+                      {new Date(borrow.approval_date).toLocaleString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
                         hour12: false,
-                        })}
+                      })}
                     </p>
-                    )}
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="space-x-2">
-                    {borrow.status === 'pending' && (
+                  {borrow.status === "pending" && (
                     <>
-                        <Button
+                      <Button
                         variant="outline"
                         onClick={() => approveBorrow(borrow.id)}
-                        >
+                      >
                         Approve
-                        </Button>
-                        <Button
-                        variant="outline"
+                      </Button>
+                      <Button
+                        variant="destructive"
                         onClick={() => rejectBorrow(borrow.id)}
-                        >
+                      >
                         Reject
-                        </Button>
+                      </Button>
                     </>
-                    )}
-                    {borrow.status === 'approved' && (
-                    <Button
-                        variant="outline"
-                        onClick={() => returnBorrow(borrow.id)}
-                    >
-                        Return
+                  )}
+                  {borrow.status === "approved" && (
+                    <Button variant="outline" onClick={() => returnBorrow(borrow.id)}>
+                      Return
                     </Button>
-                    )}
+                  )}
                 </div>
-                </li>
+              </Card>
             ))}
-            </ul>
+          </div>
         )}
-        </section>
+      </section>
     </div>
   );
 }

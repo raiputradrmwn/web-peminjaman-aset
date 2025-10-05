@@ -1,8 +1,11 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { router, useForm, usePage } from '@inertiajs/react';
+import * as React from 'react';
+
+// Import Dialog components from ShadCN UI
 
 interface Asset {
     id: number;
@@ -77,9 +80,8 @@ export default function SuperadminDashboard({
     };
 
     const deleteUser = (id: number) => {
-        if (confirm('Yakin hapus user ini?')) {
-            router.delete(`/superadmin/users/${id}`);
-        }
+        setDeleteUserId(id);
+        setIsDeleteUserDialogOpen(true);
     };
 
     // === Form tambah asset ===
@@ -97,15 +99,35 @@ export default function SuperadminDashboard({
     };
 
     const deleteAsset = (id: number) => {
-        if (confirm('Yakin hapus asset ini?')) {
-            router.delete(`/superadmin/assets/${id}`);
-        }
+        setDeleteAssetId(id);
+        setIsDeleteAssetDialogOpen(true);
     };
 
     // === Borrow actions ===
     const approveBorrow = (id: number) => router.post(`/superadmin/borrows/${id}/approve`);
     const rejectBorrow = (id: number) => router.post(`/superadmin/borrows/${id}/reject`);
     const returnBorrow = (id: number) => router.post(`/superadmin/borrows/${id}/return`);
+
+    // === Dialog States ===
+    const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = React.useState(false);
+    const [deleteUserId, setDeleteUserId] = React.useState<number | null>(null);
+
+    const [isDeleteAssetDialogOpen, setIsDeleteAssetDialogOpen] = React.useState(false);
+    const [deleteAssetId, setDeleteAssetId] = React.useState<number | null>(null);
+
+    const confirmDeleteUser = () => {
+        if (deleteUserId !== null) {
+            router.delete(`/superadmin/users/${deleteUserId}`);
+            setIsDeleteUserDialogOpen(false);
+        }
+    };
+
+    const confirmDeleteAsset = () => {
+        if (deleteAssetId !== null) {
+            router.delete(`/superadmin/assets/${deleteAssetId}`);
+            setIsDeleteAssetDialogOpen(false);
+        }
+    };
 
     return (
         <div className="min-h-screen space-y-10 bg-white p-6">
@@ -252,11 +274,9 @@ export default function SuperadminDashboard({
                             type="number"
                             value={assetForm.data.stock}
                             onChange={(e) => {
-                                // Get the value from the input field and remove leading zeros
-                                const value = e.target.value.replace(/^0+/, ''); // Remove leading zeros
-                                // Ensure that the value is a valid number and not negative
+                                const value = e.target.value.replace(/^0+/, '');
                                 if (value === '' || Number(value) >= 0) {
-                                    assetForm.setData('stock', value ? Number(value) : 0); // Set the stock value, default to 0 if empty
+                                    assetForm.setData('stock', value ? Number(value) : 0);
                                 }
                             }}
                             placeholder="Stock"
@@ -304,32 +324,53 @@ export default function SuperadminDashboard({
                 {(recentBorrows ?? []).length === 0 ? (
                     <p className="text-gray-500">Belum ada peminjaman.</p>
                 ) : (
-                    <ul className="space-y-4">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
                         {(recentBorrows ?? []).map((borrow) => (
-                            <li key={borrow.id} className="rounded border p-4 shadow">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="font-semibold">{borrow.asset.name}</p>
-                                        <p className="text-sm text-gray-500">Peminjam: {borrow.user.name}</p>
-                                        <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
-                                        <p className="text-sm">
-                                            Status:{' '}
-                                            <span
-                                                className={`font-bold px-2 py-1 rounded text-white ${
-                                                borrow.status === 'approved'
-                                                    ? 'bg-green-600'
-                                                    : borrow.status === 'pending'
-                                                    ? 'bg-yellow-600'
-                                                    : 'bg-red-600'
-                                                }`}
-                                            >
-                                                {borrow.status}
-                                            </span>
-                                        </p>
-                                        {/* Tanggal Pinjam */}
+                            <Card key={borrow.id} className="space-y-4 p-4 shadow-lg">
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div className='space-y-1'>
+                                            <p className="font-semibold">{borrow.asset.name}</p>
+                                            <p className="text-sm text-gray-500">Peminjam: {borrow.user.name}</p>
+                                            <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
+                                            <p className="text-sm">
+                                                Status:{' '}
+                                                <span
+                                                    className={`rounded px-2 py-1 font-bold text-white ${
+                                                        borrow.status === 'approved'
+                                                            ? 'bg-green-600'
+                                                            : borrow.status === 'pending'
+                                                              ? 'bg-yellow-500'
+                                                              : 'bg-blue-500'
+                                                    }`}
+                                                >
+                                                    {borrow.status}
+                                                </span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </CardHeader>
+
+                                <CardContent>
+                                    {/* Tanggal Pinjam */}
+                                    <p className="text-sm text-gray-400">
+                                        Tanggal Pinjam:{' '}
+                                        {new Date(borrow.created_at).toLocaleString('id-ID', {
+                                            day: '2-digit',
+                                            month: 'long',
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                            second: '2-digit',
+                                            hour12: false,
+                                        })}
+                                    </p>
+
+                                    {/* Approval At (jika ada) */}
+                                    {borrow.approval_date && (
                                         <p className="text-sm text-gray-400">
-                                            Tanggal Pinjam:{' '}
-                                            {new Date(borrow.created_at).toLocaleString('id-ID', {
+                                            Approval At:{' '}
+                                            {new Date(borrow.approval_date).toLocaleString('id-ID', {
                                                 day: '2-digit',
                                                 month: 'long',
                                                 year: 'numeric',
@@ -339,32 +380,17 @@ export default function SuperadminDashboard({
                                                 hour12: false,
                                             })}
                                         </p>
+                                    )}
+                                </CardContent>
 
-                                        {/* Approval At (hanya tampil kalau ada) */}
-                                        {borrow.approval_date && (
-                                            <p className="text-sm text-gray-400">
-                                                Approval At:{' '}
-                                                {new Date(borrow.approval_date).toLocaleString('id-ID', {
-                                                    day: '2-digit',
-                                                    month: 'long',
-                                                    year: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                    second: '2-digit',
-                                                    hour12: false,
-                                                })}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    {/* Action Button */}
+                                <div className="flex items-center justify-between">
                                     <div className="space-x-2">
                                         {borrow.status === 'pending' && (
                                             <>
                                                 <Button variant="outline" onClick={() => approveBorrow(borrow.id)}>
                                                     Approve
                                                 </Button>
-                                                <Button variant="outline" onClick={() => rejectBorrow(borrow.id)}>
+                                                <Button variant="destructive" onClick={() => rejectBorrow(borrow.id)}>
                                                     Reject
                                                 </Button>
                                             </>
@@ -376,9 +402,9 @@ export default function SuperadminDashboard({
                                         )}
                                     </div>
                                 </div>
-                            </li>
+                            </Card>
                         ))}
-                    </ul>
+                    </div>
                 )}
             </section>
         </div>
