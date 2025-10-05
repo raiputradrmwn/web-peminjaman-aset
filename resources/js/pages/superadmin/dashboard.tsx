@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { router, useForm, usePage } from '@inertiajs/react';
 import * as React from 'react';
-
 // Import Dialog components from ShadCN UI
 
 interface Asset {
@@ -58,13 +58,19 @@ export default function SuperadminDashboard({
 }: DashboardProps) {
     const { flash }: any = usePage().props;
 
+    const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState(false);
     // === Logout ===
     const handleLogout = () => {
-        if (confirm('Yakin ingin logout?')) {
-            router.post('/logout');
-        }
+        router.post('/logout');
     };
 
+    const openLogoutDialog = () => {
+        setIsLogoutDialogOpen(true);
+    };
+
+    const closeLogoutDialog = () => {
+        setIsLogoutDialogOpen(false);
+    };
     // === Form tambah user ===
     const userForm = useForm({
         name: '',
@@ -130,16 +136,30 @@ export default function SuperadminDashboard({
     };
 
     return (
-        <div className="min-h-screen space-y-10 bg-white p-6">
-            {/* Header + Logout */}
+        <div className="min-h-screen space-y-6 bg-white p-6">
             <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Superadmin Dashboard</h1>
-                    <p className="text-gray-600">Manage Users, Assets, and Borrows</p>
-                </div>
-                <Button variant="destructive" onClick={handleLogout}>
-                    Logout
-                </Button>
+                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+                <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="destructive" onClick={openLogoutDialog}>
+                            Logout
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Logout Confirmation</DialogTitle>
+                        </DialogHeader>
+                        <DialogDescription>Are you sure you want to log out?</DialogDescription>
+                        <div className="flex gap-4">
+                            <Button onClick={closeLogoutDialog} variant="secondary">
+                                Cancel
+                            </Button>
+                            <Button onClick={handleLogout} variant="destructive">
+                                Yes, Logout
+                            </Button>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {flash?.success && <div className="rounded bg-green-100 p-3 text-green-700">{flash.success}</div>}
@@ -329,7 +349,7 @@ export default function SuperadminDashboard({
                             <Card key={borrow.id} className="space-y-4 p-4 shadow-lg">
                                 <CardHeader>
                                     <div className="flex items-center justify-between">
-                                        <div className='space-y-1'>
+                                        <div className="space-y-1">
                                             <p className="font-semibold">{borrow.asset.name}</p>
                                             <p className="text-sm text-gray-500">Peminjam: {borrow.user.name}</p>
                                             <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
@@ -338,10 +358,14 @@ export default function SuperadminDashboard({
                                                 <span
                                                     className={`rounded px-2 py-1 font-bold text-white ${
                                                         borrow.status === 'approved'
-                                                            ? 'bg-green-600'
+                                                            ? 'bg-green-500'
                                                             : borrow.status === 'pending'
                                                               ? 'bg-yellow-500'
-                                                              : 'bg-blue-500'
+                                                              : borrow.status === 'rejected'
+                                                                ? 'bg-red-500'
+                                                                : borrow.status === 'returned'
+                                                                  ? 'bg-blue-500'
+                                                                  : 'bg-gray-500'
                                                     }`}
                                                 >
                                                     {borrow.status}
@@ -407,6 +431,40 @@ export default function SuperadminDashboard({
                     </div>
                 )}
             </section>
+            <Dialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete User</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription>Are you sure you want to delete this user?</DialogDescription>
+                    <div className="flex gap-4">
+                        <Button onClick={() => setIsDeleteUserDialogOpen(false)} variant="secondary">
+                            Cancel
+                        </Button>
+                        <Button onClick={confirmDeleteUser} variant="destructive">
+                            Yes, Delete
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Asset Dialog */}
+            <Dialog open={isDeleteAssetDialogOpen} onOpenChange={setIsDeleteAssetDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Delete Asset</DialogTitle>
+                    </DialogHeader>
+                    <DialogDescription>Are you sure you want to delete this asset?</DialogDescription>
+                    <div className="flex gap-4">
+                        <Button onClick={() => setIsDeleteAssetDialogOpen(false)} variant="secondary">
+                            Cancel
+                        </Button>
+                        <Button onClick={confirmDeleteAsset} variant="destructive">
+                            Yes, Delete
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

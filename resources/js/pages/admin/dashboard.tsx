@@ -1,14 +1,6 @@
 import * as React from "react";
 import { router, useForm, usePage } from "@inertiajs/react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from "@/components/ui/select";
 import {
   Card,
   CardContent,
@@ -240,14 +232,16 @@ export default function AdminDashboard({
                           ? "bg-green-500"
                           : borrow.status === "pending"
                           ? "bg-yellow-500"
-                          : "bg-blue-500"
+                          : borrow.status === "rejected"
+                          ? "bg-red-500"
+                          : borrow.status === "returned"
+                          ? "bg-blue-500"
+                          : "bg-gray-500" // Default color for unexpected statuses
                       }`}
                     >
                       {borrow.status}
                     </span>
                   </p>
-
-                  {/* Borrow Date */}
                   <p className="text-sm text-gray-400">
                     Tanggal Pinjam:{" "}
                     {new Date(borrow.created_at).toLocaleString("id-ID", {

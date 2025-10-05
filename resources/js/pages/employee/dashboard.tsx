@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { CheckCircleIcon, ClockIcon, XCircleIcon } from "lucide-react";
 
-// Import Dialog components from ShadCN UI
+
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 interface Asset {
@@ -43,27 +43,27 @@ export default function Dashboard({
   const [availableAssetsState] = React.useState(availableAssets);
   const [myBorrowsState, setMyBorrowsState] = React.useState(myBorrows);
 
-  // Add states for total borrow counts
+  
   const [approvedBorrows, setApprovedBorrows] = React.useState(totalApprovedBorrows);
   const [pendingBorrows, setPendingBorrows] = React.useState(totalPendingBorrows);
   const [rejectedBorrows, setRejectedBorrows] = React.useState(totalRejectedBorrows);
 
-  // State for logout confirmation modal
+  
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
   const handleLogoutClick = () => {
-    // Open the logout confirmation modal
+    
     setIsLogoutModalOpen(true);
   };
 
   const handleLogout = () => {
-    // Perform logout action here
+    
     router.post("/logout");
-    setIsLogoutModalOpen(false); // Close modal after logout
+    setIsLogoutModalOpen(false); 
   };
 
   const closeModal = () => {
-    // Close the modal without logging out
+    
     setIsLogoutModalOpen(false);
   };
 
