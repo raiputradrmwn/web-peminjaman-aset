@@ -17,6 +17,7 @@ class DashboardController extends Controller
     public function superadmin()
     {
         return Inertia::render('superadmin/dashboard', [
+            'authUser' => Auth::user(),
             'users'  => User::select('id', 'name', 'email', 'role', 'status', 'division')->get(),
             'assets' => Asset::select('id', 'serial_number', 'name', 'type', 'status', 'stock')->get(),
             'activeEmployees'          => User::where('role', 'employee')->where('status', 'active')->count(),
@@ -37,6 +38,7 @@ class DashboardController extends Controller
         $admin = auth()->user();
 
         return Inertia::render('admin/dashboard', [
+            'authUser' => Auth::user(),
             // Statistik karyawan di divisi admin
             'activeEmployees'  => User::where('role', 'employee')
                                       ->where('status', 'active')
@@ -85,6 +87,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         return Inertia::render('employee/dashboard', [
+            'authUser' => Auth::user(),
             // statistik pinjaman user
             'totalApprovedBorrows' => $user->borrows()->where('status', 'approved')->count(),
             'totalPendingBorrows'  => $user->borrows()->where('status', 'pending')->count(),
