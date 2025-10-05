@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Asset;
 use Inertia\Inertia;
 use App\Models\Borrow;
+use Illuminate\Support\Facades\Auth;
 
 
 class DashboardController extends Controller
