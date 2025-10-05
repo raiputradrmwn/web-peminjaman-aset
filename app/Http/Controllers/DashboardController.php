@@ -23,7 +23,7 @@ class DashboardController extends Controller
             'pendingEmployees'         => User::where('role', 'employee')->where('status', 'pending')->count(),
             'availableAssetsCount'     => Asset::where('status', 'available')->count(),
             'borrowedAssetsCount'      => Asset::where('status', 'borrowed')->count(),
-            'availableAssets'          => Asset::where('status', 'available')->get(),
+            'availableAssets'          => Asset::where('status', 'available') ->whereNull('deleted_at')->get(),
             'pendingApprovalEmployees' => User::where('status', 'pending')->get(),
             'recentBorrows'            => Borrow::with(['user','asset'])->latest()->take(10)->get(),
         ]);
