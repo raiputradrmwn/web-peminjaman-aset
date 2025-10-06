@@ -15,7 +15,14 @@ interface Asset {
   status: string;
   stock: number;
 }
-
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  division?: string;
+}
 interface Borrow {
   id: number;
   status: "pending" | "approved" | "rejected" | "returned";
@@ -30,9 +37,11 @@ interface EmployeeDashboardProps {
   totalRejectedBorrows: number;
   availableAssets: Asset[];
   myBorrows: Borrow[];
+  authUser?: User;
 }
 
 export default function Dashboard({
+  authUser,
   totalApprovedBorrows,
   totalPendingBorrows,
   totalRejectedBorrows,
@@ -135,7 +144,16 @@ export default function Dashboard({
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold text-gray-800">Employee Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard Employee</h1>
+          {authUser && (
+            <p className="mt-1 text-gray-600">
+              Selamat datang, <span className="font-semibold">{authUser.name}</span> (
+              <span className="capitalize">{authUser.role}</span>
+              {authUser.division && <span> - {authUser.division}</span>})
+            </p>
+          )}
+        </div>
         <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
           <DialogTrigger asChild>
             <Button variant="destructive" onClick={handleLogoutClick}>

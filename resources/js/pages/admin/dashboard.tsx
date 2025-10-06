@@ -25,6 +25,7 @@ interface User {
   email: string;
   role: string;
   status: string;
+  division: string;
 }
 
 interface Borrow {
@@ -46,6 +47,7 @@ interface DashboardProps {
   recentBorrows: Borrow[];
   users?: User[];
   assets?: Asset[];
+  authUser?: User;
 }
 
 
@@ -63,6 +65,7 @@ const formatDateTime = (dateString?: string) => {
 };
 
 export default function AdminDashboard({
+  authUser,
   activeEmployees,
   pendingEmployees,
   availableAssetsCount,
@@ -132,7 +135,16 @@ export default function AdminDashboard({
   return (
     <div className="p-6 space-y-6 bg-white min-h-screen">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard Admin</h1>
+          {authUser && (
+            <p className="mt-1 text-gray-600">
+              Selamat datang, <span className="font-semibold">{authUser.name}</span> (
+              <span className="capitalize">{authUser.role}</span>
+              {authUser.division && <span> - {authUser.division}</span>})
+            </p>
+          )}
+        </div>
         <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
           <DialogTrigger asChild>
             <Button variant="destructive" onClick={openLogoutDialog}>
