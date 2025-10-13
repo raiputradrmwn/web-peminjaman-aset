@@ -18,8 +18,9 @@ return new class extends Migration
             $table->integer('quantity')->default(1);
             $table->enum('status', ['pending', 'approved', 'rejected', 'returned'])->default('pending');
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');
-            $table->date('approval_date')->nullable();
-            $table->date('ended_at')->nullable();
+            $table->dateTime('borrow_date')->nullable();
+            $table->dateTime('approval_date')->nullable();
+            $table->dateTime('ended_at')->nullable();
             $table->text('notes')->nullable();
             $table->timestamps();
             $table->softDeletes();

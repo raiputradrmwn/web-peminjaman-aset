@@ -41,6 +41,7 @@ interface Borrow {
   quantity: number;
   approval_date?: string;
   created_at: string;
+  borrow_date?: string;
   notes: string;
 }
 
@@ -203,13 +204,6 @@ export default function AdminDashboard({
                   </p>
                   <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
 
-                  {/* ✅ Catatan Peminjaman */}
-                  {borrow.notes && (
-                    <p className="text-sm text-gray-600 italic">
-                      Catatan: “{borrow.notes}”
-                    </p>
-                  )}
-
                   {/* Status */}
                   <p className="text-sm mt-1">
                     Status:{" "}
@@ -230,15 +224,32 @@ export default function AdminDashboard({
                     </span>
                   </p>
 
-                  {/* Tanggal */}
-                  <p className="text-sm text-gray-400">
-                    Tanggal Pinjam: {formatDateTime(borrow.created_at)}
-                  </p>
+                  {borrow.approval_date && (
+                    <p className="text-sm text-gray-400">
+                    Disetujui Pada:{' '}
+                    {new Date(borrow.approval_date).toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false,
+                    })}
+                    </p>
+                    )}
                   {borrow.approval_date && (
                     <p className="text-sm text-gray-400">
                       Approval At: {formatDateTime(borrow.approval_date)}
                     </p>
                   )}
+
+                  {/* ✅ Tambahkan catatan peminjaman */}
+                    {borrow.notes && (
+                        <div className="rounded bg-gray-100 p-2 text-sm text-gray-700">
+                        <strong>Catatan:</strong> {borrow.notes}
+                        </div>
+                    )}
                 </div>
 
                 {/* Aksi Admin */}
