@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Models\Asset;
 use Inertia\Inertia;
 use App\Models\Borrow;
+use Illuminate\Support\Facades\Auth;
 
 
 class DashboardController extends Controller
@@ -17,13 +18,14 @@ class DashboardController extends Controller
     public function superadmin()
     {
         return Inertia::render('superadmin/dashboard', [
+            'authUser' => Auth::user(),
             'users'  => User::select('id', 'name', 'email', 'role', 'status', 'division')->get(),
             'assets' => Asset::select('id', 'serial_number', 'name', 'type', 'status', 'stock')->get(),
             'activeEmployees'          => User::where('role', 'employee')->where('status', 'active')->count(),
             'pendingEmployees'         => User::where('role', 'employee')->where('status', 'pending')->count(),
             'availableAssetsCount'     => Asset::where('status', 'available')->count(),
             'borrowedAssetsCount'      => Asset::where('status', 'borrowed')->count(),
-            'availableAssets'          => Asset::where('status', 'available')->get(),
+            'availableAssets'          => Asset::where('status', 'available') ->whereNull('deleted_at')->get(),
             'pendingApprovalEmployees' => User::where('status', 'pending')->get(),
             'recentBorrows'            => Borrow::with(['user','asset'])->latest()->take(10)->get(),
         ]);
@@ -37,6 +39,7 @@ class DashboardController extends Controller
         $admin = auth()->user();
 
         return Inertia::render('admin/dashboard', [
+            'authUser' => Auth::user(),
             // Statistik karyawan di divisi admin
             'activeEmployees'  => User::where('role', 'employee')
                                       ->where('status', 'active')
@@ -85,6 +88,7 @@ class DashboardController extends Controller
         $user = auth()->user();
 
         return Inertia::render('employee/dashboard', [
+            'authUser' => Auth::user(),
             // statistik pinjaman user
             'totalApprovedBorrows' => $user->borrows()->where('status', 'approved')->count(),
             'totalPendingBorrows'  => $user->borrows()->where('status', 'pending')->count(),

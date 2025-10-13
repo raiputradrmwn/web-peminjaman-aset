@@ -1,5 +1,20 @@
-import React from "react";
-import { router, useForm, usePage } from "@inertiajs/react";
+import * as React from "react";
+import { router, usePage } from "@inertiajs/react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 interface Asset {
   id: number;
@@ -15,6 +30,7 @@ interface User {
   email: string;
   role: string;
   status: string;
+  division?: string;
 }
 
 interface Borrow {
@@ -22,65 +38,52 @@ interface Borrow {
   status: string;
   user: User;
   asset: Asset;
+  quantity: number;
   approval_date?: string;
+  created_at: string;
+  notes: string;
 }
 
 interface DashboardProps {
+  authUser: User;
   activeEmployees: number;
   pendingEmployees: number;
   availableAssetsCount: number;
   borrowedAssetsCount: number;
   availableAssets: Asset[];
   recentBorrows: Borrow[];
-  users?: User[];
-  assets?: Asset[];
+  pendingApprovalEmployees: User[];
+  users: User[];
+  assets: Asset[];
 }
 
+const formatDateTime = (dateString?: string) => {
+  if (!dateString) return "-";
+  return new Date(dateString).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+};
+
 export default function AdminDashboard({
+  authUser,
   activeEmployees,
   pendingEmployees,
   availableAssetsCount,
   borrowedAssetsCount,
   availableAssets,
   recentBorrows,
-  users = [],
-  assets = [],
 }: DashboardProps) {
   const { flash }: any = usePage().props;
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState(false);
 
-  // Logout
-  const handleLogout = () => {
-    router.post("/logout");
-  };
+  const handleLogout = () => router.post("/logout");
 
-  // Form tambah user (admin hanya bisa tambah employee)
-  const userForm = useForm({
-    name: "",
-    email: "",
-    role: "employee",
-  });
-
-  const submitUser = () => {
-    userForm.post("/admin/users", {
-      onSuccess: () => userForm.reset(),
-    });
-  };
-
-  // Form tambah asset
-  const assetForm = useForm({
-    name: "",
-    type: "asset",
-    status: "available",
-    stock: 1,
-  });
-
-  const submitAsset = () => {
-    assetForm.post("/admin/assets", {
-      onSuccess: () => assetForm.reset(),
-    });
-  };
-
-  // Approval untuk borrow
   const approveBorrow = (id: number) => {
     router.post(`/admin/borrows/${id}/approve`);
   };
@@ -88,28 +91,53 @@ export default function AdminDashboard({
   const rejectBorrow = (id: number) => {
     router.post(`/admin/borrows/${id}/reject`);
   };
-    const returnBorrow = (id: number) =>{
+
+  const returnBorrow = (id: number) => {
     router.post(`/admin/borrows/${id}/return`);
   };
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 dark:bg-neutral-900 min-h-screen">
+    <div className="p-6 space-y-6 bg-white min-h-screen">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Monitor assets, employees, and borrows
-          </p>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard Admin</h1>
+          {authUser && (
+            <p className="mt-1 text-gray-600">
+              Selamat datang, <span className="font-semibold">{authUser.name}</span>{" "}
+              (<span className="capitalize">{authUser.role}</span>
+              {authUser.division && <span> - {authUser.division}</span>})
+            </p>
+          )}
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-        >
-          Logout
-        </button>
+
+        {/* Tombol Logout */}
+        <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="destructive" onClick={() => setIsLogoutDialogOpen(true)}>
+              Logout
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Konfirmasi Logout</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin keluar dari akun ini?
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-4 mt-4">
+              <Button onClick={() => setIsLogoutDialogOpen(false)} variant="secondary">
+                Batal
+              </Button>
+              <Button onClick={handleLogout} variant="destructive">
+                Ya, Logout
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
+      {/* Flash Message */}
       {flash?.success && (
         <div className="bg-green-100 text-green-700 p-3 rounded">
           {flash.success}
@@ -117,255 +145,134 @@ export default function AdminDashboard({
       )}
 
       {/* Statistik */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Active Employees" value={activeEmployees} color="green" />
-        <StatCard title="Pending Employees" value={pendingEmployees} color="yellow" />
-        <StatCard title="Assets Available" value={availableAssetsCount} color="blue" />
-        <StatCard title="Assets Borrowed" value={borrowedAssetsCount} color="red" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Active Employees</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-green-600">{activeEmployees}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pending Employees</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-yellow-600">{pendingEmployees}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Assets Available</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-blue-600">
+              {availableAssetsCount}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Assets Borrowed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-red-600">
+              {borrowedAssetsCount}
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Tambah Employee */}
+      {/* Peminjaman Terbaru */}
       <section>
-        <h2 className="text-xl font-semibold mt-6 mb-2">Tambah Employee</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submitUser();
-          }}
-          className="bg-white dark:bg-neutral-800 p-4 rounded shadow"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input
-              value={userForm.data.name}
-              onChange={(e) => userForm.setData("name", e.target.value)}
-              placeholder="Nama"
-              className="border p-2 rounded dark:bg-neutral-900"
-            />
-            <input
-              type="email"
-              value={userForm.data.email}
-              onChange={(e) => userForm.setData("email", e.target.value)}
-              placeholder="Email"
-              className="border p-2 rounded dark:bg-neutral-900"
-            />
-          </div>
-          <button
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded"
-            disabled={userForm.processing}
-          >
-            Tambah Employee
-          </button>
-        </form>
-      </section>
-
-      {/* Tambah Asset */}
-      <section>
-        <h2 className="text-xl font-semibold mt-6 mb-2">Tambah Asset</h2>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            submitAsset();
-          }}
-          className="bg-white dark:bg-neutral-800 p-4 rounded shadow"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input
-              value={assetForm.data.name}
-              onChange={(e) => assetForm.setData("name", e.target.value)}
-              placeholder="Nama"
-              className="border p-2 rounded dark:bg-neutral-900"
-            />
-            <select
-              value={assetForm.data.type}
-              onChange={(e) => assetForm.setData("type", e.target.value)}
-              className="border p-2 rounded dark:bg-neutral-900"
-            >
-              <option value="asset">Asset</option>
-              <option value="room">Room</option>
-            </select>
-            <select
-              value={assetForm.data.status}
-              onChange={(e) => assetForm.setData("status", e.target.value)}
-              className="border p-2 rounded dark:bg-neutral-900"
-            >
-              <option value="available">Available</option>
-              <option value="borrowed">Borrowed</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="retired">Retired</option>
-            </select>
-            <input
-              type="number"
-              value={assetForm.data.stock}
-              onChange={(e) =>
-                assetForm.setData("stock", Number(e.target.value))
-              }
-              placeholder="Stock"
-              className="border p-2 rounded dark:bg-neutral-900"
-            />
-          </div>
-          <button
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded"
-            disabled={assetForm.processing}
-          >
-            Tambah Asset
-          </button>
-        </form>
-      </section>
-
-      {/* Available Assets */}
-      <div>
-        <h2 className="text-xl font-bold mt-6 mb-4">Available Assets</h2>
-        {availableAssets.length === 0 ? (
-          <p className="text-gray-500">No available assets</p>
-        ) : (
-          <ul className="space-y-2">
-            {availableAssets.map((asset) => (
-              <li
-                key={asset.id}
-                className="p-3 border shadow rounded flex justify-between"
-              >
-                <div>
-                  <p className="font-bold">{asset.name}</p>
-                  <p className="text-sm text-gray-500">{asset.type}</p>
-                </div>
-                <span className="px-2 py-1 rounded text-white bg-green-600">
-                  {asset.status}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* Semua Employee Sesuai Divisi */}
-      <div>
-        <h2 className="text-xl font-bold mt-6 mb-4">All Employees (My Division)</h2>
-        {users.length === 0 ? (
-          <p className="text-gray-500">No employees in your division</p>
-        ) : (
-          <table className="w-full border-collapse bg-white dark:bg-neutral-800 shadow rounded">
-            <thead>
-              <tr className="bg-gray-100 dark:bg-neutral-700 text-left">
-                <th className="p-3">Name</th>
-                <th className="p-3">Email</th>
-                <th className="p-3">Role</th>
-                <th className="p-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((emp) => (
-                <tr key={emp.id} className="border-t">
-                  <td className="p-3">{emp.name}</td>
-                  <td className="p-3">{emp.email}</td>
-                  <td className="p-3">{emp.role}</td>
-                  <td className="p-3">
-                    <span
-                      className={`px-2 py-1 rounded text-white ${
-                        emp.status === "active"
-                          ? "bg-green-600"
-                          : emp.status === "pending"
-                          ? "bg-yellow-500"
-                          : "bg-red-600"
-                      }`}
-                    >
-                      {emp.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Recent Borrows (dengan Approval) */}
-      <div>
-        <h2 className="text-xl font-bold mt-6 mb-4">Recent Borrows</h2>
+        <h2 className="text-xl font-semibold mt-6 mb-4">Recent Borrows</h2>
         {recentBorrows.length === 0 ? (
-          <p className="text-gray-500">No recent borrows</p>
+          <p className="text-gray-500">Belum ada peminjaman.</p>
         ) : (
-          <ul className="space-y-2">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {recentBorrows.map((borrow) => (
-              <li
-                key={borrow.id}
-                className="p-3 border shadow rounded flex justify-between items-center"
-              >
-                <div>
+              <Card key={borrow.id} className="space-y-4 p-4 shadow-lg">
+                <div className="space-y-1">
                   <p className="font-semibold">{borrow.asset?.name}</p>
                   <p className="text-sm text-gray-500">
-                    Borrowed by: {borrow.user?.name}
+                    Peminjam: {borrow.user?.name}
+                  </p>
+                  <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
+
+                  {/* ✅ Catatan Peminjaman */}
+                  {borrow.notes && (
+                    <p className="text-sm text-gray-600 italic">
+                      Catatan: “{borrow.notes}”
+                    </p>
+                  )}
+
+                  {/* Status */}
+                  <p className="text-sm mt-1">
+                    Status:{" "}
+                    <span
+                      className={`font-bold px-2 py-1 rounded text-white ${
+                        borrow.status === "approved"
+                          ? "bg-green-500"
+                          : borrow.status === "pending"
+                          ? "bg-yellow-500"
+                          : borrow.status === "rejected"
+                          ? "bg-red-500"
+                          : borrow.status === "returned"
+                          ? "bg-blue-500"
+                          : "bg-gray-500"
+                      }`}
+                    >
+                      {borrow.status}
+                    </span>
+                  </p>
+
+                  {/* Tanggal */}
+                  <p className="text-sm text-gray-400">
+                    Tanggal Pinjam: {formatDateTime(borrow.created_at)}
                   </p>
                   {borrow.approval_date && (
-                    <p className="text-xs text-gray-400">
-                      Approved at: {borrow.approval_date}
+                    <p className="text-sm text-gray-400">
+                      Approval At: {formatDateTime(borrow.approval_date)}
                     </p>
                   )}
                 </div>
-                <div className="flex gap-2 items-center">
-                  <span
-                    className={`px-2 py-1 rounded text-white ${
-                      borrow.status === "approved"
-                        ? "bg-green-600"
-                        : borrow.status === "pending"
-                        ? "bg-yellow-500"
-                        : "bg-red-600"
-                    }`}
-                  >
-                    {borrow.status}
-                  </span>
+
+                {/* Aksi Admin */}
+                <div className="space-x-2">
                   {borrow.status === "pending" && (
                     <>
-                      <button
+                      <Button
+                        variant="outline"
                         onClick={() => approveBorrow(borrow.id)}
-                        className="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
                       >
                         Approve
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="destructive"
                         onClick={() => rejectBorrow(borrow.id)}
-                        className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700"
                       >
                         Reject
-                      </button>
+                      </Button>
                     </>
                   )}
                   {borrow.status === "approved" && (
-                      <button
-                        onClick={() => returnBorrow(borrow.id)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded"
-                      >
-                        Return
-                      </button>
-                    )}
+                    <Button
+                      variant="outline"
+                      onClick={() => returnBorrow(borrow.id)}
+                    >
+                      Return
+                    </Button>
+                  )}
                 </div>
-              </li>
+              </Card>
             ))}
-          </ul>
+          </div>
         )}
-      </div>
-    </div>
-  );
-}
-
-function StatCard({
-  title,
-  value,
-  color,
-}: {
-  title: string;
-  value: number;
-  color: string;
-}) {
-  const colorMap: Record<string, string> = {
-    blue: "text-blue-600",
-    green: "text-green-600",
-    yellow: "text-yellow-600",
-    red: "text-red-600",
-  };
-  return (
-    <div className="p-4 bg-white dark:bg-neutral-800 shadow rounded">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className={`text-3xl font-bold ${colorMap[color]}`}>{value}</p>
+      </section>
     </div>
   );
 }

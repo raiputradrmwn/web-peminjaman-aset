@@ -18,6 +18,7 @@ class Borrow extends Model
         'approval_date',
         'ended_at',
         'notes',
+        'quantity',
     ];
 
     public function user()

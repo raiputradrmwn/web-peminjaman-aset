@@ -1,5 +1,25 @@
-import React from "react";
-import { router, useForm, usePage } from "@inertiajs/react";
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { router, useForm, usePage } from '@inertiajs/react';
+import * as React from 'react';
 
 interface Asset {
   id: number;
@@ -25,9 +45,13 @@ interface Borrow {
   quantity: number;
   user: User;
   asset: Asset;
+  approval_date?: string;
+  created_at: string;
+  notes: string;
 }
 
 interface DashboardProps {
+  authUser?: User;
   activeEmployees?: number;
   pendingEmployees?: number;
   availableAssetsCount?: number;
@@ -39,6 +63,7 @@ interface DashboardProps {
 }
 
 export default function SuperadminDashboard({
+  authUser,
   activeEmployees = 0,
   pendingEmployees = 0,
   availableAssetsCount = 0,
@@ -50,353 +75,453 @@ export default function SuperadminDashboard({
 }: DashboardProps) {
   const { flash }: any = usePage().props;
 
-  // === Logout ===
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = React.useState(false);
+
   const handleLogout = () => {
-    if (confirm("Yakin ingin logout?")) {
-      router.post("/logout");
-    }
+    router.post('/logout');
   };
+
+  const openLogoutDialog = () => setIsLogoutDialogOpen(true);
+  const closeLogoutDialog = () => setIsLogoutDialogOpen(false);
 
   // === Form tambah user ===
   const userForm = useForm({
-    name: "",
-    email: "",
-    role: "employee",
-    division: "",
+    name: '',
+    email: '',
+    role: 'employee',
+    division: '',
   });
 
   const submitUser = () => {
-    userForm.post("/superadmin/users", {
+    userForm.post('/superadmin/users', {
       onSuccess: () => userForm.reset(),
     });
   };
 
   const deleteUser = (id: number) => {
-    if (confirm("Yakin hapus user ini?")) {
-      router.delete(`/superadmin/users/${id}`);
-    }
+    setDeleteUserId(id);
+    setIsDeleteUserDialogOpen(true);
   };
 
   // === Form tambah asset ===
   const assetForm = useForm({
-    name: "",
-    type: "asset",
-    status: "available",
+    name: '',
+    type: 'asset',
+    status: 'available',
     stock: 1,
   });
 
   const submitAsset = () => {
-    assetForm.post("/superadmin/assets", {
+    assetForm.post('/superadmin/assets', {
       onSuccess: () => assetForm.reset(),
     });
   };
 
   const deleteAsset = (id: number) => {
-    if (confirm("Yakin hapus asset ini?")) {
-      router.delete(`/superadmin/assets/${id}`);
-    }
+    setDeleteAssetId(id);
+    setIsDeleteAssetDialogOpen(true);
   };
 
   // === Borrow actions ===
-  const approveBorrow = (id: number) =>
-    router.post(`/superadmin/borrows/${id}/approve`);
-  const rejectBorrow = (id: number) =>
-    router.post(`/superadmin/borrows/${id}/reject`);
-  const returnBorrow = (id: number) =>
-    router.post(`/superadmin/borrows/${id}/return`);
+  const approveBorrow = (id: number) => router.post(`/superadmin/borrows/${id}/approve`);
+  const rejectBorrow = (id: number) => router.post(`/superadmin/borrows/${id}/reject`);
+  const returnBorrow = (id: number) => router.post(`/superadmin/borrows/${id}/return`);
+
+  // === Dialog States ===
+  const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = React.useState(false);
+  const [deleteUserId, setDeleteUserId] = React.useState<number | null>(null);
+
+  const [isDeleteAssetDialogOpen, setIsDeleteAssetDialogOpen] = React.useState(false);
+  const [deleteAssetId, setDeleteAssetId] = React.useState<number | null>(null);
+
+  const confirmDeleteUser = () => {
+    if (deleteUserId !== null) {
+      router.delete(`/superadmin/users/${deleteUserId}`);
+      setIsDeleteUserDialogOpen(false);
+    }
+  };
+
+  const confirmDeleteAsset = () => {
+    if (deleteAssetId !== null) {
+      router.delete(`/superadmin/assets/${deleteAssetId}`);
+      setIsDeleteAssetDialogOpen(false);
+    }
+  };
 
   return (
-    <div className="p-6 space-y-10 bg-gray-50 dark:bg-neutral-900 min-h-screen">
-      {/* Header + Logout */}
-      <div className="flex justify-between items-center">
+    <div className="min-h-screen space-y-6 bg-gray-50 p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
-            Superadmin Dashboard
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage Users, Assets, and Borrows
-          </p>
+          <h1 className="text-3xl font-bold text-gray-800">Dashboard Superadmin</h1>
+          {authUser && (
+            <p className="mt-1 text-gray-600">
+              Selamat datang, <span className="font-semibold">{authUser.name}</span> (
+              <span className="capitalize">{authUser.role}</span>
+              {authUser.division && <span> - {authUser.division}</span>})
+            </p>
+          )}
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition"
-        >
-          Logout
-        </button>
+
+        <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+          <DialogTrigger asChild>
+            <Button variant="destructive" onClick={openLogoutDialog}>
+              Logout
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Konfirmasi Logout</DialogTitle>
+            </DialogHeader>
+            <DialogDescription>Apakah Anda yakin ingin keluar?</DialogDescription>
+            <div className="flex gap-4">
+              <Button onClick={closeLogoutDialog} variant="secondary">
+                Batal
+              </Button>
+              <Button onClick={handleLogout} variant="destructive">
+                Ya, Logout
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {flash?.success && (
-        <div className="bg-green-100 text-green-700 p-3 rounded">
-          {flash.success}
-        </div>
+        <div className="rounded bg-green-100 p-3 text-green-700">{flash.success}</div>
       )}
 
       {/* Statistik */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard title="Active Employees" value={activeEmployees} color="green" />
-        <StatCard title="Pending Employees" value={pendingEmployees} color="yellow" />
-        <StatCard title="Available Asset" value={availableAssetsCount} color="blue" />
-        <StatCard title="Borrowed Quantity" value={borrowedAssetsCount} color="red" />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+        <StatCard title="Karyawan Aktif" value={activeEmployees} color="green" />
+        <StatCard title="Menunggu Persetujuan" value={pendingEmployees} color="yellow" />
+        <StatCard title="Aset Tersedia" value={availableAssetsCount} color="blue" />
+        <StatCard title="Aset Dipinjam" value={borrowedAssetsCount} color="red" />
       </div>
 
       {/* User Management */}
       <section>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-          Users
-        </h2>
+        <h2 className="mb-4 text-xl font-semibold text-gray-800">Manajemen Pengguna</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             submitUser();
           }}
-          className="bg-gray-50 dark:bg-neutral-800 p-4 rounded mb-6"
+          className="mb-6 rounded bg-white p-4 shadow"
         >
-          <h3 className="font-semibold mb-2">Tambah User</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input
+          <h3 className="mb-2 font-semibold">Tambah User Baru</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Input
               value={userForm.data.name}
-              onChange={(e) => userForm.setData("name", e.target.value)}
+              onChange={(e) => userForm.setData('name', e.target.value)}
               placeholder="Nama"
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
             />
-            <input
+            <Input
               type="email"
               value={userForm.data.email}
-              onChange={(e) => userForm.setData("email", e.target.value)}
+              onChange={(e) => userForm.setData('email', e.target.value)}
               placeholder="Email"
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
             />
-            <select
+            <Select
               value={userForm.data.role}
-              onChange={(e) => userForm.setData("role", e.target.value)}
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
+              onValueChange={(value) => userForm.setData('role', value)}
             >
-              <option value="admin">Admin</option>
-              <option value="employee">Employee</option>
-            </select>
-            <input
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Pilih Role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Role</SelectLabel>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="employee">Employee</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Input
               type="text"
               value={userForm.data.division}
-              onChange={(e) => userForm.setData("division", e.target.value)}
-              placeholder="Division"
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
+              onChange={(e) => userForm.setData('division', e.target.value)}
+              placeholder="Divisi"
             />
           </div>
-          <button
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded"
-            disabled={userForm.processing}
-          >
+          <Button type="submit" className="mt-3" disabled={userForm.processing}>
             Tambah User
-          </button>
+          </Button>
         </form>
 
-        <table className="min-w-full border">
-          <thead className="bg-gray-100 dark:bg-neutral-700">
-            <tr>
-              <th className="border px-3 py-2">Nama</th>
-              <th className="border px-3 py-2">Email</th>
-              <th className="border px-3 py-2">Role</th>
-              <th className="border px-3 py-2">Division</th>
-              <th className="border px-3 py-2">Status</th>
-              <th className="border px-3 py-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(users ?? []).map((u) => (
-              <tr key={u.id}>
-                <td className="border px-3 py-2">{u.name}</td>
-                <td className="border px-3 py-2">{u.email}</td>
-                <td className="border px-3 py-2">{u.role}</td>
-                <td className="border px-3 py-2">{u.division}</td>
-                <td className="border px-3 py-2">{u.status}</td>
-                <td className="border px-3 py-2">
-                  <button
-                    onClick={() => deleteUser(u.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    Hapus
-                  </button>
-                </td>
+        <div className="overflow-x-auto rounded bg-white shadow">
+          <table className="min-w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-3 py-2">Nama</th>
+                <th className="border px-3 py-2">Email</th>
+                <th className="border px-3 py-2">Role</th>
+                <th className="border px-3 py-2">Divisi</th>
+                <th className="border px-3 py-2">Status</th>
+                <th className="border px-3 py-2">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(users ?? []).map((u) => (
+                <tr key={u.id}>
+                  <td className="border px-3 py-2">{u.name}</td>
+                  <td className="border px-3 py-2">{u.email}</td>
+                  <td className="border px-3 py-2 capitalize">{u.role}</td>
+                  <td className="border px-3 py-2">{u.division ?? '-'}</td>
+                  <td className="border px-3 py-2">{u.status}</td>
+                  <td className="border px-3 py-2 text-center">
+                    <Button variant="destructive" onClick={() => deleteUser(u.id)}>
+                      Hapus
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* Asset Management */}
       <section>
-        <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-          Assets
-        </h2>
+        <h2 className="mb-4 text-xl font-semibold text-gray-800">Manajemen Aset</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
             submitAsset();
           }}
-          className="bg-gray-50 dark:bg-neutral-800 p-4 rounded mb-6"
+          className="mb-6 rounded bg-white p-4 shadow"
         >
-          <h3 className="font-semibold mb-2">Tambah Asset</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input
+          <h3 className="mb-2 font-semibold">Tambah Aset</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <Input
               value={assetForm.data.name}
-              onChange={(e) => assetForm.setData("name", e.target.value)}
+              onChange={(e) => assetForm.setData('name', e.target.value)}
               placeholder="Nama"
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
             />
-            <select
+            <Select
               value={assetForm.data.type}
-              onChange={(e) => assetForm.setData("type", e.target.value)}
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
+              onValueChange={(value) => assetForm.setData('type', value)}
             >
-              <option value="asset">Asset</option>
-              <option value="room">Room</option>
-            </select>
-            <select
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Tipe Aset" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="asset">Asset</SelectItem>
+                  <SelectItem value="room">Room</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Select
               value={assetForm.data.status}
-              onChange={(e) => assetForm.setData("status", e.target.value)}
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
+              onValueChange={(value) => assetForm.setData('status', value)}
             >
-              <option value="available">Available</option>
-              <option value="borrowed">Borrowed</option>
-              <option value="maintenance">Maintenance</option>
-              <option value="retired">Retired</option>
-            </select>
-            <input
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Status Aset" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="borrowed">Borrowed</SelectItem>
+                  <SelectItem value="maintenance">Maintenance</SelectItem>
+                  <SelectItem value="retired">Retired</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+            <Input
               type="number"
               value={assetForm.data.stock}
               onChange={(e) =>
-                assetForm.setData("stock", Number(e.target.value))
+                assetForm.setData('stock', Number(e.target.value.replace(/^0+/, '')) || 0)
               }
               placeholder="Stock"
-              className="border p-2 rounded dark:bg-neutral-900 bg-gray-50"
             />
           </div>
-          <button
-            className="mt-3 bg-blue-600 text-white px-4 py-2 rounded"
-            disabled={assetForm.processing}
-          >
-            Tambah Asset
-          </button>
+          <Button type="submit" className="mt-3" disabled={assetForm.processing}>
+            Tambah Aset
+          </Button>
         </form>
 
-        <table className="min-w-full border">
-          <thead className="bg-gray-100 dark:bg-neutral-700">
-            <tr>
-              <th className="border px-3 py-2">Serial</th>
-              <th className="border px-3 py-2">Nama</th>
-              <th className="border px-3 py-2">Tipe</th>
-              <th className="border px-3 py-2">Status</th>
-              <th className="border px-3 py-2">Stock</th>
-              <th className="border px-3 py-2">Aksi</th>
-            </tr>
-          </thead>
-          <tbody>
-            {(assets ?? []).map((a) => (
-              <tr key={a.id}>
-                <td className="border px-3 py-2">{a.serial_number}</td>
-                <td className="border px-3 py-2">{a.name}</td>
-                <td className="border px-3 py-2">{a.type}</td>
-                <td className="border px-3 py-2">{a.status}</td>
-                <td className="border px-3 py-2">{a.stock}</td>
-                <td className="border px-3 py-2">
-                  <button
-                    onClick={() => deleteAsset(a.id)}
-                    className="bg-red-600 text-white px-3 py-1 rounded"
-                  >
-                    Hapus
-                  </button>
-                </td>
+        <div className="overflow-x-auto rounded bg-white shadow">
+          <table className="min-w-full border">
+            <thead className="bg-gray-100">
+              <tr>
+                <th className="border px-3 py-2">Serial</th>
+                <th className="border px-3 py-2">Nama</th>
+                <th className="border px-3 py-2">Tipe</th>
+                <th className="border px-3 py-2">Status</th>
+                <th className="border px-3 py-2">Stock</th>
+                <th className="border px-3 py-2">Aksi</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {(assets ?? []).map((a) => (
+                <tr key={a.id}>
+                  <td className="border px-3 py-2">{a.serial_number}</td>
+                  <td className="border px-3 py-2">{a.name}</td>
+                  <td className="border px-3 py-2">{a.type}</td>
+                  <td className="border px-3 py-2 capitalize">{a.status}</td>
+                  <td className="border px-3 py-2">{a.stock}</td>
+                  <td className="border px-3 py-2 text-center">
+                    <Button variant="destructive" onClick={() => deleteAsset(a.id)}>
+                      Hapus
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </section>
 
       {/* Recent Borrows */}
       <section>
-        <h2 className="text-xl font-semibold mt-8 mb-4 text-gray-800 dark:text-white">
-          Recent Borrows
-        </h2>
+        <h2 className="mt-8 mb-4 text-xl font-semibold text-gray-800">Peminjaman Terbaru</h2>
         {(recentBorrows ?? []).length === 0 ? (
           <p className="text-gray-500">Belum ada peminjaman.</p>
         ) : (
-          <ul className="space-y-4">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {(recentBorrows ?? []).map((borrow) => (
-              <li
-                key={borrow.id}
-                className="p-4 border rounded shadow dark:bg-neutral-800"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-semibold">{borrow.asset.name}</p>
-                    <p className="text-sm text-gray-500">
-                      Peminjam: {borrow.user.name}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      Jumlah: {borrow.quantity}
-                    </p>
-                    <p className="text-sm text-gray-400">
-                      Status: {borrow.status}
+              <Card key={borrow.id} className="space-y-4 p-4 shadow-lg">
+                <CardHeader>
+                  <div className="space-y-1">
+                    <p className="font-semibold text-gray-800">{borrow.asset.name}</p>
+                    <p className="text-sm text-gray-500">Peminjam: {borrow.user.name}</p>
+                    <p className="text-sm text-gray-400">Jumlah: {borrow.quantity}</p>
+                    <p className="text-sm">
+                      Status:{' '}
+                      <span
+                        className={`rounded px-2 py-1 font-bold text-white ${
+                          borrow.status === 'approved'
+                            ? 'bg-green-500'
+                            : borrow.status === 'pending'
+                            ? 'bg-yellow-500'
+                            : borrow.status === 'rejected'
+                            ? 'bg-red-500'
+                            : borrow.status === 'returned'
+                            ? 'bg-blue-500'
+                            : 'bg-gray-500'
+                        }`}
+                      >
+                        {borrow.status}
+                      </span>
                     </p>
                   </div>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <p className="text-sm text-gray-400">
+                        Tanggal Pinjam:{' '}
+                        {new Date(borrow.created_at).toLocaleString('id-ID', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false,
+                        })}
+                    </p>
+
+                    {borrow.approval_date && (
+                        <p className="text-sm text-gray-400">
+                        Disetujui Pada:{' '}
+                        {new Date(borrow.approval_date).toLocaleString('id-ID', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false,
+                        })}
+                        </p>
+                    )}
+
+                    {/* ✅ Tambahkan catatan peminjaman */}
+                    {borrow.notes && (
+                        <div className="rounded bg-gray-100 p-2 text-sm text-gray-700">
+                        <strong>Catatan:</strong> {borrow.notes}
+                        </div>
+                    )}
+                </CardContent>
+                <div className="flex items-center justify-between">
                   <div className="space-x-2">
-                    {borrow.status === "pending" && (
+                    {borrow.status === 'pending' && (
                       <>
-                        <button
-                          onClick={() => approveBorrow(borrow.id)}
-                          className="bg-green-500 text-white px-3 py-1 rounded"
-                        >
+                        <Button variant="outline" onClick={() => approveBorrow(borrow.id)}>
                           Approve
-                        </button>
-                        <button
-                          onClick={() => rejectBorrow(borrow.id)}
-                          className="bg-red-500 text-white px-3 py-1 rounded"
-                        >
+                        </Button>
+                        <Button variant="destructive" onClick={() => rejectBorrow(borrow.id)}>
                           Reject
-                        </button>
+                        </Button>
                       </>
                     )}
-                    {borrow.status === "approved" && (
-                      <button
-                        onClick={() => returnBorrow(borrow.id)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded"
-                      >
+                    {borrow.status === 'approved' && (
+                      <Button variant="outline" onClick={() => returnBorrow(borrow.id)}>
                         Return
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
-              </li>
+              </Card>
             ))}
-          </ul>
+          </div>
         )}
       </section>
+
+      {/* Delete Dialogs */}
+      <Dialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Pengguna</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            Apakah Anda yakin ingin menghapus pengguna ini?
+          </DialogDescription>
+          <div className="flex gap-4">
+            <Button onClick={() => setIsDeleteUserDialogOpen(false)} variant="secondary">
+              Batal
+            </Button>
+            <Button onClick={confirmDeleteUser} variant="destructive">
+              Ya, Hapus
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDeleteAssetDialogOpen} onOpenChange={setIsDeleteAssetDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Hapus Aset</DialogTitle>
+          </DialogHeader>
+          <DialogDescription>Apakah Anda yakin ingin menghapus aset ini?</DialogDescription>
+          <div className="flex gap-4">
+            <Button onClick={() => setIsDeleteAssetDialogOpen(false)} variant="secondary">
+              Batal
+            </Button>
+            <Button onClick={confirmDeleteAsset} variant="destructive">
+              Ya, Hapus
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
 // Reusable StatCard
-function StatCard({
-  title,
-  value,
-  color,
-}: {
-  title: string;
-  value: number;
-  color: string;
-}) {
+function StatCard({ title, value, color }: { title: string; value: number; color: string }) {
   const colorMap: Record<string, string> = {
-    blue: "text-blue-600",
-    green: "text-green-600",
-    yellow: "text-yellow-600",
-    red: "text-red-600",
+    blue: 'text-blue-600',
+    green: 'text-green-600',
+    yellow: 'text-yellow-600',
+    red: 'text-red-600',
   };
   return (
-    <div className="p-6 bg-white dark:bg-neutral-800 shadow rounded-lg">
-      <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
-        {title}
-      </h2>
-      <p className={`text-3xl font-bold ${colorMap[color]}`}>{value}</p>
-    </div>
+    <Card>
+      <CardContent>
+        <h2 className="text-lg font-semibold text-gray-700">{title}</h2>
+        <p className={`text-3xl font-bold ${colorMap[color]}`}>{value}</p>
+      </CardContent>
+    </Card>
   );
 }
