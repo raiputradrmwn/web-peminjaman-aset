@@ -48,6 +48,7 @@ interface Borrow {
   approval_date?: string;
   created_at: string;
   notes: string;
+  borrow_date?: string;
 }
 
 interface DashboardProps {
@@ -88,7 +89,7 @@ export default function SuperadminDashboard({
   const userForm = useForm({
     name: '',
     email: '',
-    role: 'employee',
+    role: '',
     division: '',
   });
 
@@ -410,15 +411,17 @@ export default function SuperadminDashboard({
                 <CardContent className="space-y-2">
                     <p className="text-sm text-gray-400">
                         Tanggal Pinjam:{' '}
-                        {new Date(borrow.created_at).toLocaleString('id-ID', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit',
-                        hour12: false,
-                        })}
+                        {borrow.borrow_date
+                          ? new Date(borrow.borrow_date).toLocaleString('id-ID', {
+                              day: '2-digit',
+                              month: 'long',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                              hour12: false,
+                            })
+                          : '-'}
                     </p>
 
                     {borrow.approval_date && (

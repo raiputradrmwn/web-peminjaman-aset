@@ -15,6 +15,7 @@ class Borrow extends Model
         'asset_id',
         'status',
         'approved_by',
+        'borrow_date',
         'approval_date',
         'ended_at',
         'notes',
