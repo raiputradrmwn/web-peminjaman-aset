@@ -47,6 +47,7 @@ interface Borrow {
   asset: Asset;
   approval_date?: string;
   created_at: string;
+  notes: string;
 }
 
 interface DashboardProps {
@@ -406,23 +407,10 @@ export default function SuperadminDashboard({
                     </p>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-gray-400">
-                    Tanggal Pinjam:{' '}
-                    {new Date(borrow.created_at).toLocaleString('id-ID', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit',
-                      hour12: false,
-                    })}
-                  </p>
-                  {borrow.approval_date && (
+                <CardContent className="space-y-2">
                     <p className="text-sm text-gray-400">
-                      Disetujui Pada:{' '}
-                      {new Date(borrow.approval_date).toLocaleString('id-ID', {
+                        Tanggal Pinjam:{' '}
+                        {new Date(borrow.created_at).toLocaleString('id-ID', {
                         day: '2-digit',
                         month: 'long',
                         year: 'numeric',
@@ -430,9 +418,30 @@ export default function SuperadminDashboard({
                         minute: '2-digit',
                         second: '2-digit',
                         hour12: false,
-                      })}
+                        })}
                     </p>
-                  )}
+
+                    {borrow.approval_date && (
+                        <p className="text-sm text-gray-400">
+                        Disetujui Pada:{' '}
+                        {new Date(borrow.approval_date).toLocaleString('id-ID', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false,
+                        })}
+                        </p>
+                    )}
+
+                    {/* ✅ Tambahkan catatan peminjaman */}
+                    {borrow.notes && (
+                        <div className="rounded bg-gray-100 p-2 text-sm text-gray-700">
+                        <strong>Catatan:</strong> {borrow.notes}
+                        </div>
+                    )}
                 </CardContent>
                 <div className="flex items-center justify-between">
                   <div className="space-x-2">
