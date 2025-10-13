@@ -1,6 +1,10 @@
 // resources/js/pages/employee/dashboard.tsx
+"use client";
+
 import * as React from "react";
 import { router } from "@inertiajs/react";
+import { formatISO } from "date-fns";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
@@ -13,31 +17,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import DateTimePicker from "@/components/date-picker";
 
-interface Asset {
-  id: number;
-  name: string;
-  type: string;
-  status: string;
-  stock: number;
-}
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  division?: string;
-}
+// ⬇️ use DateTimePicker
+
+
+interface Asset { id: number; name: string; type: string; status: string; stock: number; }
+interface User { id: number; name: string; email: string; role: string; status: string; division?: string; }
 interface Borrow {
   id: number;
   status: "pending" | "approved" | "rejected" | "returned";
   quantity: number;
   notes?: string;
   asset?: Asset | null;
-  borrow_date?: string;
+  borrow_datetime?: string; // ISO lengkap
 }
-
 interface EmployeeDashboardProps {
   totalApprovedBorrows: number;
   totalPendingBorrows: number;
@@ -55,9 +49,9 @@ export default function Dashboard({
   availableAssets,
   myBorrows,
 }: EmployeeDashboardProps) {
-  const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
-  const [notes, setNotes] = React.useState<{ [key: number]: string }>({});
-  const [borrowDates, setBorrowDates] = React.useState<{ [key: number]: string }>({});
+  const [quantities, setQuantities] = React.useState<Record<number, number>>({});
+  const [notes, setNotes] = React.useState<Record<number, string>>({});
+  const [borrowDateTimes, setBorrowDateTimes] = React.useState<Record<number, Date | undefined>>({});
 
   const [availableAssetsState] = React.useState(availableAssets);
   const [myBorrowsState, setMyBorrowsState] = React.useState(myBorrows);
@@ -69,107 +63,63 @@ export default function Dashboard({
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
   const handleLogoutClick = () => setIsLogoutModalOpen(true);
-  const handleLogout = () => {
-    router.post("/logout");
-    setIsLogoutModalOpen(false);
-  };
+  const handleLogout = () => { router.post("/logout"); setIsLogoutModalOpen(false); };
   const closeModal = () => setIsLogoutModalOpen(false);
 
   const getAvailableStock = (assetId: number) => {
     const borrowedQty = myBorrowsState
-      .filter(
-        (b) =>
-          b.asset?.id === assetId &&
-          (b.status === "pending" || b.status === "approved")
-      )
+      .filter(b => b.asset?.id === assetId && (b.status === "pending" || b.status === "approved"))
       .reduce((sum, b) => sum + b.quantity, 0);
-
-    const asset = availableAssetsState.find((a) => a.id === assetId);
+    const asset = availableAssetsState.find(a => a.id === assetId);
     return asset ? asset.stock - borrowedQty : 0;
   };
 
   const handleBorrow = (assetId: number) => {
     const quantity = quantities[assetId] || 1;
     const note = (notes[assetId] || "").trim();
-    const borrowDate = borrowDates[assetId];
+    const dt = borrowDateTimes[assetId];
     const availableStock = getAvailableStock(assetId);
 
-    if (quantity > availableStock) {
-      alert("Stok tidak mencukupi untuk melakukan peminjaman.");
-      return;
-    }
+    if (quantity > availableStock) return alert("Stok tidak mencukupi untuk melakukan peminjaman.");
+    if (!dt) return alert("Mohon pilih tanggal & waktu peminjaman.");
+    if (!note) return alert("Mohon isi deskripsi peminjaman (digunakan untuk apa).");
 
-    if (!borrowDate) {
-      alert("Mohon pilih tanggal peminjaman.");
-      return;
-    }
+    const iso = formatISO(dt); // ex: 2025-11-20T09:00:00+07:00
 
-    if (note === "") {
-      alert("Mohon isi deskripsi peminjaman (digunakan untuk apa).");
-      return;
-    }
-
+    // Optimistic UI
     const newBorrow: Borrow = {
       id: Date.now(),
       status: "pending",
       quantity,
       notes: note,
-      borrow_date: borrowDate,
-      asset: availableAssetsState.find((asset) => asset.id === assetId) ?? null,
+      borrow_datetime: iso,
+      asset: availableAssetsState.find(a => a.id === assetId) ?? null,
     };
+    setMyBorrowsState(prev => [...prev, newBorrow]);
+    setPendingBorrows(prev => prev + 1);
 
-    setMyBorrowsState((prevBorrows) => [...prevBorrows, newBorrow]);
-    setPendingBorrows((prev) => prev + 1);
-
-    router.post(
-      "/employee/borrows",
-      {
-        asset_id: assetId,
-        quantity,
-        notes: note,
-        borrow_date: borrowDate,
+    router.post("/employee/borrows", {
+      asset_id: assetId,
+      quantity,
+      notes: note,
+      borrow_datetime: iso,
+    }, {
+      onSuccess: () => {
+        setQuantities(prev => ({ ...prev, [assetId]: 1 }));
+        setNotes(prev => ({ ...prev, [assetId]: "" }));
+        setBorrowDateTimes(prev => ({ ...prev, [assetId]: undefined }));
       },
-      {
-        onSuccess: () => {
-          setQuantities((prev) => ({ ...prev, [assetId]: 1 }));
-          setNotes((prev) => ({ ...prev, [assetId]: "" }));
-          setBorrowDates((prev) => ({ ...prev, [assetId]: "" }));
-        },
-        onError: () => {
-          setMyBorrowsState((prevBorrows) =>
-            prevBorrows.filter((b) => b.id !== newBorrow.id)
-          );
-          setPendingBorrows((prev) => prev - 1);
-        },
+      onError: () => {
+        setMyBorrowsState(prev => prev.filter(b => b.id !== newBorrow.id));
+        setPendingBorrows(prev => prev - 1);
       }
-    );
-  };
-
-  const handleQuantityChange = (assetId: number, value: number) => {
-    setQuantities((prev) => ({
-      ...prev,
-      [assetId]: value > 0 ? value : 1,
-    }));
-  };
-
-  const handleNotesChange = (assetId: number, value: string) => {
-    setNotes((prev) => ({
-      ...prev,
-      [assetId]: value,
-    }));
-  };
-
-  const handleBorrowDateChange = (assetId: number, value: string) => {
-    setBorrowDates((prev) => ({
-      ...prev,
-      [assetId]: value,
-    }));
+    });
   };
 
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard Employee</h1>
           {authUser && (
@@ -180,11 +130,11 @@ export default function Dashboard({
             </p>
           )}
         </div>
+
+        {/* Logout */}
         <Dialog open={isLogoutModalOpen} onOpenChange={setIsLogoutModalOpen}>
           <DialogTrigger asChild>
-            <Button variant="destructive" onClick={handleLogoutClick}>
-              Logout
-            </Button>
+            <Button variant="destructive" onClick={handleLogoutClick}>Logout</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
@@ -200,49 +150,26 @@ export default function Dashboard({
       </div>
 
       {/* Statistik */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle>
-              <CheckCircleIcon className="w-6 h-6 text-green-500 mr-2 inline" />
-              Approved Borrows
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-green-600">{approvedBorrows}</p>
-          </CardContent>
+          <CardHeader><CardTitle><CheckCircleIcon className="mr-2 inline h-6 w-6 text-green-500" />Approved Borrows</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold text-green-600">{approvedBorrows}</p></CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>
-              <ClockIcon className="w-6 h-6 text-yellow-500 mr-2 inline" />
-              Pending Borrows
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-yellow-600">{pendingBorrows}</p>
-          </CardContent>
+          <CardHeader><CardTitle><ClockIcon className="mr-2 inline h-6 w-6 text-yellow-500" />Pending Borrows</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold text-yellow-600">{pendingBorrows}</p></CardContent>
         </Card>
-
         <Card>
-          <CardHeader>
-            <CardTitle>
-              <XCircleIcon className="w-6 h-6 text-red-500 mr-2 inline" />
-              Rejected Borrows
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-red-600">{rejectedBorrows}</p>
-          </CardContent>
+          <CardHeader><CardTitle><XCircleIcon className="mr-2 inline h-6 w-6 text-red-500" />Rejected Borrows</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-bold text-red-600">{rejectedBorrows}</p></CardContent>
         </Card>
       </div>
 
-      {/* Available Assets & My Borrows */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* Available Assets & History */}
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Available Assets */}
         <div>
-          <h2 className="text-2xl font-bold mb-3">Available Assets</h2>
+          <h2 className="mb-3 text-2xl font-bold">Available Assets</h2>
           {availableAssetsState.length === 0 ? (
             <p className="text-gray-500">Tidak ada aset yang tersedia.</p>
           ) : (
@@ -250,52 +177,48 @@ export default function Dashboard({
               {availableAssetsState.map((asset) => {
                 const availableStock = getAvailableStock(asset.id);
                 return (
-                  <li key={asset.id} className="p-4 bg-gray-50 border rounded-lg shadow">
+                  <li key={asset.id} className="rounded-lg border bg-gray-50 p-4 shadow">
                     <div>
                       <p className="font-semibold">{asset.name}</p>
                       <p className="text-sm text-gray-500">{asset.type}</p>
                       <p className="text-sm text-green-600">Stock: {availableStock}</p>
                     </div>
 
-                    <div className="mt-3 flex flex-col gap-2">
-                      {/* Jumlah */}
+                    <div className="mt-3 flex flex-col gap-3">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Tanggal & Waktu Peminjaman</label>
+                        <DateTimePicker
+                          value={borrowDateTimes[asset.id]}
+                          onChange={(d: any) => setBorrowDateTimes((prev) => ({ ...prev, [asset.id]: d })) }
+                          placeholder="Pilih tanggal & waktu"
+                          buttonClassName="w-full"
+                        />
+                      </div>
+
                       <Input
                         type="number"
                         min={1}
                         max={availableStock}
                         value={quantities[asset.id] || 1}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                          handleQuantityChange(asset.id, parseInt(e.target.value || "1", 10))
+                          setQuantities((prev) => ({ ...prev, [asset.id]: Math.max(1, parseInt(e.target.value || "1", 10)) }))
                         }
-                        className="w-24"
+                        className="w-28"
                         disabled={availableStock <= 0}
                       />
 
-                      {/* Tanggal & Waktu Pinjam */}
-                        <label className="text-sm font-medium text-gray-700">Tanggal & Waktu Peminjaman</label>
-                        <Input
-                        type="datetime-local"
-                        value={borrowDates[asset.id] || ""}
-                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                            handleBorrowDateChange(asset.id, e.target.value)
-                        }
-                        className="w-full"
-                        disabled={availableStock <= 0}
-                        />
-
-                      {/* Catatan */}
                       <textarea
                         placeholder="Deskripsi peminjaman (digunakan untuk apa?)"
                         value={notes[asset.id] || ""}
                         onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-                          handleNotesChange(asset.id, e.target.value)
+                          setNotes((prev) => ({ ...prev, [asset.id]: e.target.value }))
                         }
-                        className="w-full border rounded p-2 min-h-[70px] resize-none"
+                        className="min-h-[70px] w-full resize-none rounded border p-2"
                       />
 
                       <Button
                         onClick={() => handleBorrow(asset.id)}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                        className="w-full bg-blue-600 text-white hover:bg-blue-700"
                         disabled={availableStock <= 0}
                       >
                         Ajukan Peminjaman
@@ -309,33 +232,33 @@ export default function Dashboard({
         </div>
 
         {/* My Borrow History */}
-        <div className="bg-white p-6 rounded-lg shadow-lg">
-          <h2 className="text-2xl font-bold mb-3">My Borrow History</h2>
+        <div className="rounded-lg bg-white p-6 shadow-lg">
+          <h2 className="mb-3 text-2xl font-bold">My Borrow History</h2>
           {myBorrowsState.length === 0 ? (
             <p className="text-gray-500">Belum ada peminjaman aset.</p>
           ) : (
             <ul className="space-y-4">
               {myBorrowsState.map((borrow) => (
-                <li key={borrow.id} className="p-4 bg-gray-50 border rounded-lg shadow">
+                <li key={borrow.id} className="rounded-lg border bg-gray-50 p-4 shadow">
                   <div>
                     <p className="font-semibold">{borrow.asset?.name ?? "Aset dihapus"}</p>
                     <p className="text-sm text-gray-500">{borrow.asset?.type ?? "-"}</p>
                     <p className="text-sm text-blue-600">Jumlah: {borrow.quantity}</p>
-                    {borrow.borrow_date && (
-                    <p className="text-sm text-gray-500">
-                        Tanggal & Waktu Pinjam:{" "}
-                        {new Date(borrow.borrow_date).toLocaleString("id-ID", {
-                        dateStyle: "long",
-                        timeStyle: "short",
+                    {borrow.borrow_datetime && (
+                      <p className="text-sm text-gray-500">
+                        Waktu Pinjam:{" "}
+                        {new Date(borrow.borrow_datetime).toLocaleString("id-ID", {
+                          dateStyle: "long",
+                          timeStyle: "short",
                         })}
-                    </p>
+                      </p>
                     )}
                     {borrow.notes && (
-                      <p className="text-sm text-gray-600 italic mt-1">“{borrow.notes}”</p>
+                      <p className="mt-1 text-sm italic text-gray-600">“{borrow.notes}”</p>
                     )}
                   </div>
                   <span
-                    className={`mt-2 inline-block px-3 py-1 rounded text-white font-semibold ${
+                    className={`mt-2 inline-block rounded px-3 py-1 font-semibold text-white ${
                       borrow.status === "approved"
                         ? "bg-green-600"
                         : borrow.status === "pending"
