@@ -35,6 +35,7 @@ interface Borrow {
   quantity: number;
   notes?: string;
   asset?: Asset | null;
+  borrow_date?: string;
 }
 
 interface EmployeeDashboardProps {
@@ -56,6 +57,8 @@ export default function Dashboard({
 }: EmployeeDashboardProps) {
   const [quantities, setQuantities] = React.useState<{ [key: number]: number }>({});
   const [notes, setNotes] = React.useState<{ [key: number]: string }>({});
+  const [borrowDates, setBorrowDates] = React.useState<{ [key: number]: string }>({});
+
   const [availableAssetsState] = React.useState(availableAssets);
   const [myBorrowsState, setMyBorrowsState] = React.useState(myBorrows);
 
@@ -88,10 +91,16 @@ export default function Dashboard({
   const handleBorrow = (assetId: number) => {
     const quantity = quantities[assetId] || 1;
     const note = (notes[assetId] || "").trim();
+    const borrowDate = borrowDates[assetId];
     const availableStock = getAvailableStock(assetId);
 
     if (quantity > availableStock) {
       alert("Stok tidak mencukupi untuk melakukan peminjaman.");
+      return;
+    }
+
+    if (!borrowDate) {
+      alert("Mohon pilih tanggal peminjaman.");
       return;
     }
 
@@ -100,35 +109,33 @@ export default function Dashboard({
       return;
     }
 
-    // Optimistic UI: tambah ke daftar sementara dengan id sementara
     const newBorrow: Borrow = {
       id: Date.now(),
       status: "pending",
       quantity,
       notes: note,
+      borrow_date: borrowDate,
       asset: availableAssetsState.find((asset) => asset.id === assetId) ?? null,
     };
 
     setMyBorrowsState((prevBorrows) => [...prevBorrows, newBorrow]);
     setPendingBorrows((prev) => prev + 1);
 
-    // Kirim ke server
     router.post(
       "/employee/borrows",
       {
         asset_id: assetId,
         quantity,
         notes: note,
+        borrow_date: borrowDate,
       },
       {
         onSuccess: () => {
-          // pada sukses, reset input untuk asset tersebut
           setQuantities((prev) => ({ ...prev, [assetId]: 1 }));
           setNotes((prev) => ({ ...prev, [assetId]: "" }));
-          // opsi: bisa refresh data dari server jika ingin data final (id, status actual, dll)
+          setBorrowDates((prev) => ({ ...prev, [assetId]: "" }));
         },
         onError: () => {
-          // revert optimistic UI
           setMyBorrowsState((prevBorrows) =>
             prevBorrows.filter((b) => b.id !== newBorrow.id)
           );
@@ -138,7 +145,6 @@ export default function Dashboard({
     );
   };
 
-  // typed event handlers
   const handleQuantityChange = (assetId: number, value: number) => {
     setQuantities((prev) => ({
       ...prev,
@@ -153,8 +159,16 @@ export default function Dashboard({
     }));
   };
 
+  const handleBorrowDateChange = (assetId: number, value: string) => {
+    setBorrowDates((prev) => ({
+      ...prev,
+      [assetId]: value,
+    }));
+  };
+
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard Employee</h1>
@@ -244,6 +258,7 @@ export default function Dashboard({
                     </div>
 
                     <div className="mt-3 flex flex-col gap-2">
+                      {/* Jumlah */}
                       <Input
                         type="number"
                         min={1}
@@ -256,7 +271,19 @@ export default function Dashboard({
                         disabled={availableStock <= 0}
                       />
 
-                      {/* native textarea, styled with tailwind */}
+                      {/* Tanggal & Waktu Pinjam */}
+                        <label className="text-sm font-medium text-gray-700">Tanggal & Waktu Peminjaman</label>
+                        <Input
+                        type="datetime-local"
+                        value={borrowDates[asset.id] || ""}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            handleBorrowDateChange(asset.id, e.target.value)
+                        }
+                        className="w-full"
+                        disabled={availableStock <= 0}
+                        />
+
+                      {/* Catatan */}
                       <textarea
                         placeholder="Deskripsi peminjaman (digunakan untuk apa?)"
                         value={notes[asset.id] || ""}
@@ -294,6 +321,15 @@ export default function Dashboard({
                     <p className="font-semibold">{borrow.asset?.name ?? "Aset dihapus"}</p>
                     <p className="text-sm text-gray-500">{borrow.asset?.type ?? "-"}</p>
                     <p className="text-sm text-blue-600">Jumlah: {borrow.quantity}</p>
+                    {borrow.borrow_date && (
+                    <p className="text-sm text-gray-500">
+                        Tanggal & Waktu Pinjam:{" "}
+                        {new Date(borrow.borrow_date).toLocaleString("id-ID", {
+                        dateStyle: "long",
+                        timeStyle: "short",
+                        })}
+                    </p>
+                    )}
                     {borrow.notes && (
                       <p className="text-sm text-gray-600 italic mt-1">“{borrow.notes}”</p>
                     )}
