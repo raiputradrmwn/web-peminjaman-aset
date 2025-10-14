@@ -49,6 +49,7 @@ class BorrowController extends Controller
             'quantity' => 'required|integer|min:1',
             'notes'    => 'nullable|string',
             'borrow_date' => 'nullable|date',
+            'ended_at' => 'nullable|date',
         ]);
 
         $asset = Asset::findOrFail($request->asset_id);
@@ -63,7 +64,8 @@ class BorrowController extends Controller
             'quantity'  => $request->quantity,
             'status'    => 'pending',
             'notes'     => $request->notes,
-            'borrow_date'=> $request->borrow_date
+            'borrow_date'=> $request->borrow_date,
+            'ended_at'  => $request->ended_at,
         ]);
 
         BorrowHistory::create([

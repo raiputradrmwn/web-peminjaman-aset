@@ -49,6 +49,7 @@ interface Borrow {
   created_at: string;
   notes: string;
   borrow_date?: string;
+  ended_at?: string;
 }
 
 interface DashboardProps {
@@ -409,34 +410,52 @@ export default function SuperadminDashboard({
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-2">
+                    {borrow.borrow_date && (
+                      <p className="text-sm text-gray-400">
+                        🕒 Meminjam Pada:{" "}
+                        {new Date(borrow.borrow_date).toLocaleString("id-ID", {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          second: "2-digit",
+                          hour12: false,
+                          timeZone: "Asia/Jakarta", // pastikan pakai WIB
+                        })}
+                      </p>
+                    )}
+
+                    {borrow.ended_at && (
                     <p className="text-sm text-gray-400">
-                        Tanggal Pinjam:{' '}
-                        {borrow.borrow_date
-                          ? new Date(borrow.borrow_date).toLocaleString('id-ID', {
-                              day: '2-digit',
-                              month: 'long',
-                              year: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                              hour12: false,
-                            })
-                          : '-'}
+                        ⏳ Pengembalian Pada:{" "}
+                        {new Date(borrow.ended_at).toLocaleString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false,
+                        timeZone: "Asia/Jakarta",
+                        })}
                     </p>
+                    )}
 
                     {borrow.approval_date && (
-                        <p className="text-sm text-gray-400">
-                        Disetujui Pada:{' '}
-                        {new Date(borrow.approval_date).toLocaleString('id-ID', {
-                            day: '2-digit',
-                            month: 'long',
-                            year: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false,
+                    <p className="text-sm text-gray-400">
+                        ✅ Disetujui Pada:{" "}
+                        {new Date(borrow.approval_date).toLocaleString("id-ID", {
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                        hour12: false,
+                        timeZone: "Asia/Jakarta",
                         })}
-                        </p>
+                    </p>
                     )}
 
                     {/* ✅ Tambahkan catatan peminjaman */}
