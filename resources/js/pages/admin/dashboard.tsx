@@ -203,10 +203,7 @@ export default function AdminDashboard({
 
   return (
     <div className="min-h-screen space-y-6 bg-white p-6">
-      {/* Toaster (hapus kalau sudah dipasang di entry app.tsx) */}
-      <Toaster richColors closeButton />
 
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard Admin</h1>

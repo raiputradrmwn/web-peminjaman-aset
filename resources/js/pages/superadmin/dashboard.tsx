@@ -285,10 +285,6 @@ export default function SuperadminDashboard({
 
   return (
     <div className="min-h-screen space-y-6 bg-gray-50 p-6">
-      {/* Toaster (hapus jika sudah dipasang di app root) */}
-      <Toaster richColors closeButton />
-
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Dashboard Superadmin</h1>

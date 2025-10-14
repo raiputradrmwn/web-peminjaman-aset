@@ -204,33 +204,46 @@ export default function Dashboard({
     setMyBorrowsState((prev) => [...prev, newBorrow]);
     setPendingBorrows((prev) => prev + 1);
 
-    router.post(
-      "/employee/borrows",
-      {
-        asset_id: assetId,
-        quantity,
-        unit,
-        notes: note,
-        borrow_date: borrow_iso,
-        ended_at: end_iso,
-      },
-      {
-        onStart: () => toast.loading("Mengajukan peminjaman...", { id: `borrow-${assetId}` }),
-        onSuccess: () => {
-          toast.success("Pengajuan peminjaman terkirim.", { id: `borrow-${assetId}` });
-          setQuantities((prev) => ({ ...prev, [assetId]: 1 }));
-          setUnits((prev) => ({ ...prev, [assetId]: "" }));
-          setNotes((prev) => ({ ...prev, [assetId]: "" }));
-          setBorrowDateTimes((prev) => ({ ...prev, [assetId]: undefined }));
-          setBorrowEndDateTimes((prev) => ({ ...prev, [assetId]: undefined }));
-        },
-        onError: (errs) => {
-          toast.error("Gagal mengajukan peminjaman. Coba lagi.", { id: `borrow-${assetId}` });
-          setMyBorrowsState((prev) => prev.filter((b) => b.id !== newBorrow.id));
-          setPendingBorrows((prev) => prev - 1);
-        },
-      }
-    );
+const toastId = `borrow-${assetId}`
+
+router.post(
+  "/employee/borrows",
+  {
+    asset_id: assetId,
+    quantity,
+    unit,
+    notes: note,
+    borrow_date: borrow_iso,
+    ended_at: end_iso,
+  },
+  {
+    onStart: () => toast.loading("Mengajukan peminjaman...", { id: toastId }),
+    onSuccess: () => {
+      toast.success("Pengajuan peminjaman terkirim.", {
+        id: toastId,
+        duration: 1600, // auto close ~1.6s
+      });
+      setQuantities((prev) => ({ ...prev, [assetId]: 1 }));
+      setUnits((prev) => ({ ...prev, [assetId]: "" }));
+      setNotes((prev) => ({ ...prev, [assetId]: "" }));
+      setBorrowDateTimes((prev) => ({ ...prev, [assetId]: undefined }));
+      setBorrowEndDateTimes((prev) => ({ ...prev, [assetId]: undefined }));
+    },
+    onError: () => {
+      toast.error("Gagal mengajukan peminjaman. Coba lagi.", {
+        id: toastId,
+        duration: 2200, // auto close
+      });
+      setMyBorrowsState((prev) => prev.filter((b) => b.id !== newBorrow.id));
+      setPendingBorrows((prev) => prev - 1);
+    },
+    onFinish: () => {
+      // Pastikan tidak ada toast yang “nyangkut” kalau status tidak sempat update
+      setTimeout(() => toast.dismiss(toastId), 2500);
+    },
+  }
+);
+
   };
 
   return (
