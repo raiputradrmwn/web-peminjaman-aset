@@ -1,10 +1,10 @@
-// resources/js/pages/employee/dashboard.tsx
+
 "use client";
 
 import * as React from "react";
 import { router } from "@inertiajs/react";
 import { format } from "date-fns";
-import { toast } from "sonner"; // ⬅️ Sonner
+import { toast } from "sonner"; 
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,9 +19,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import DateTimePicker from "@/components/date-picker"; // date+time picker milikmu
+import DateTimePicker from "@/components/date-picker"; 
 
-// Pagination & Select (shadcn)
+
 import {
   Pagination,
   PaginationContent,
@@ -86,7 +86,7 @@ export default function Dashboard({
   availableAssets,
   myBorrows,
 }: EmployeeDashboardProps) {
-  // --- Form states per asset
+  
   const [quantities, setQuantities] = React.useState<Record<number, number>>({});
   const [notes, setNotes] = React.useState<Record<number, string>>({});
   const [units, setUnits] = React.useState<Record<number, string>>({});
@@ -97,16 +97,16 @@ export default function Dashboard({
     Record<number, Date | undefined>
   >({});
 
-  // --- Data states
+  
   const [availableAssetsState] = React.useState(availableAssets);
   const [myBorrowsState, setMyBorrowsState] = React.useState(myBorrows);
 
-  // --- Counters
+  
   const [approvedBorrows, setApprovedBorrows] = React.useState(totalApprovedBorrows);
   const [pendingBorrows, setPendingBorrows] = React.useState(totalPendingBorrows);
   const [rejectedBorrows, setRejectedBorrows] = React.useState(totalRejectedBorrows);
 
-  // --- Logout modal
+  
   const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
   const handleLogoutClick = () => setIsLogoutModalOpen(true);
   const handleLogout = () => {
@@ -119,7 +119,7 @@ export default function Dashboard({
   };
   const closeModal = () => setIsLogoutModalOpen(false);
 
-  // --- Pagination & search
+  
   const [page, setPage] = React.useState(1);
   const [pageSize, setPageSize] = React.useState(5);
   const [query, setQuery] = React.useState("");
@@ -143,7 +143,7 @@ export default function Dashboard({
     setPage(1);
   }, [query, pageSize]);
 
-  // --- Helpers
+  
   const getAvailableStock = (assetId: number) => {
     const borrowedQty = myBorrowsState
       .filter(
@@ -190,7 +190,7 @@ export default function Dashboard({
     const borrow_iso = format(startDt, "yyyy-MM-dd'T'HH:mm:ssxxx");
     const end_iso = format(endDt, "yyyy-MM-dd'T'HH:mm:ssxxx");
 
-    // Optimistic UI
+    
     const newBorrow: Borrow = {
       id: Date.now(),
       status: "pending",
@@ -221,7 +221,7 @@ router.post(
     onSuccess: () => {
       toast.success("Pengajuan peminjaman terkirim.", {
         id: toastId,
-        duration: 1600, // auto close ~1.6s
+        duration: 1000, 
       });
       setQuantities((prev) => ({ ...prev, [assetId]: 1 }));
       setUnits((prev) => ({ ...prev, [assetId]: "" }));
@@ -232,14 +232,14 @@ router.post(
     onError: () => {
       toast.error("Gagal mengajukan peminjaman. Coba lagi.", {
         id: toastId,
-        duration: 2200, // auto close
+        duration: 2200, 
       });
       setMyBorrowsState((prev) => prev.filter((b) => b.id !== newBorrow.id));
       setPendingBorrows((prev) => prev - 1);
     },
     onFinish: () => {
-      // Pastikan tidak ada toast yang “nyangkut” kalau status tidak sempat update
-      setTimeout(() => toast.dismiss(toastId), 2500);
+      
+      setTimeout(() => toast.dismiss(toastId), 500);
     },
   }
 );
