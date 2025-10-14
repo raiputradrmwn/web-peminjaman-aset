@@ -232,7 +232,7 @@ router.post(
     onError: () => {
       toast.error("Gagal mengajukan peminjaman. Coba lagi.", {
         id: toastId,
-        duration: 2200, 
+        duration: 1000, 
       });
       setMyBorrowsState((prev) => prev.filter((b) => b.id !== newBorrow.id));
       setPendingBorrows((prev) => prev - 1);
