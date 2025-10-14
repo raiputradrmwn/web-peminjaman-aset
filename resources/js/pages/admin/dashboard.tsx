@@ -44,6 +44,7 @@ interface Borrow {
   borrow_date?: string;
   ended_at?: string;
   notes: string;
+  unit?: string;
 }
 
 interface DashboardProps {
@@ -236,7 +237,7 @@ export default function AdminDashboard({
                         minute: "2-digit",
                         second: "2-digit",
                         hour12: false,
-                        timeZone: "Asia/Jakarta", // pastikan pakai WIB
+                        timeZone: "Asia/Jakarta",
                         })}
                     </p>
                     )}
@@ -274,7 +275,14 @@ export default function AdminDashboard({
                     )}
 
 
-                  {/* ✅ Tambahkan catatan peminjaman */}
+                  {/* Unit Peminjam */}
+                    {borrow.unit && (
+                        <div className="rounded bg-gray-100 p-2 text-sm text-gray-700">
+                        <strong>Unit Peminjam:</strong> {borrow.unit}
+                        </div>
+                    )}
+
+                  {/* Tambahkan catatan peminjaman */}
                     {borrow.notes && (
                         <div className="rounded bg-gray-100 p-2 text-sm text-gray-700">
                         <strong>Catatan:</strong> {borrow.notes}

@@ -20,6 +20,7 @@ class Borrow extends Model
         'ended_at',
         'notes',
         'quantity',
+        'unit',
     ];
 
     public function user()
